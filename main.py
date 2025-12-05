@@ -1,4 +1,3 @@
-# main.py - ejecuta tu backend dentro de Railway
 import runpy
 
 if __name__ == "__main__":
