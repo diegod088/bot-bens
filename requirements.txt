@@ -1,0 +1,13 @@
+# Telegram Bot Libraries
+python-telegram-bot==20.7
+telethon==1.36.0
+
+# Web Framework & Server
+fastapi==0.109.0
+uvicorn[standard]==0.27.0
+
+# HTTP Client
+requests==2.31.0
+
+# Utilities
+cryptography>=41.0.0
