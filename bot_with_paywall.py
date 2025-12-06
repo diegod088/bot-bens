@@ -63,6 +63,10 @@ if ADMIN_ID == 0:
 # Initialize Telethon client (for downloading from channels)
 telethon_client = TelegramClient(
     StringSession(TELEGRAM_SESSION_STRING),
+    int(TELEGRAM_API_ID),
+    TELEGRAM_API_HASH
+)
+
 # Constants
 STARS_PER_DOWNLOAD = 1  # Cost in stars for each download
 FREE_DOWNLOAD_LIMIT = 3  # Free users: 3 videos total before needing stars
@@ -72,7 +76,6 @@ FREE_PHOTO_DAILY_LIMIT = 10  # Free users: 10 photos daily
 PREMIUM_VIDEO_DAILY_LIMIT = 50
 PREMIUM_MUSIC_DAILY_LIMIT = 50
 PREMIUM_APK_DAILY_LIMIT = 50
-# Premium daily limits (unlimited photos, 50 daily for others)
 PREMIUM_VIDEO_DAILY_LIMIT = 50
 PREMIUM_MUSIC_DAILY_LIMIT = 50
 PREMIUM_APK_DAILY_LIMIT = 50
