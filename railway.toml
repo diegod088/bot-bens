@@ -1,0 +1,97 @@
+# Railway Configuration File
+# Docs: https://docs.railway.app/deploy/config-as-code
+
+services:
+  telegram-bot:
+    name: telegram-media-bot
+    build:
+      dockerfile: Dockerfile.bot
+      context: .
+    
+    # Restart policy
+    restart: always
+    
+    # Resource limits (adjust based on your plan)
+    resources:
+      memoryLimit: 512Mi
+      cpuLimit: 0.5
+    
+    # Persistent volumes
+    volumes:
+      - name: bot-data
+        mountPath: /data
+    
+    # Environment variables (set these in Railway dashboard)
+    env:
+      TELEGRAM_BOT_TOKEN:
+        required: true
+      TELEGRAM_API_ID:
+        required: true
+      TELEGRAM_API_HASH:
+        required: true
+      TELEGRAM_SESSION_STRING:
+        required: true
+      DB_PATH: /data
+      PYTHONUNBUFFERED: "1"
+    
+    # Health check settings
+    healthcheck:
+      enabled: true
+      interval: 60s
+      timeout: 10s
+      retries: 3
+  
+  paypal-backend:
+    name: paypal-payment-backend
+    build:
+      dockerfile: Dockerfile.backend
+      context: .
+    
+    # Restart policy
+    restart: always
+    
+    # Resource limits
+    resources:
+      memoryLimit: 512Mi
+      cpuLimit: 0.5
+    
+    # Persistent volumes
+    volumes:
+      - name: backend-data
+        mountPath: /data
+    
+    # Environment variables
+    env:
+      PAYPAL_CLIENT_ID:
+        required: true
+      PAYPAL_CLIENT_SECRET:
+        required: true
+      PAYPAL_MODE:
+        default: sandbox
+      TELEGRAM_BOT_TOKEN:
+        required: true
+      BACKEND_URL:
+        required: true
+        # Set to: https://${{RAILWAY_PUBLIC_DOMAIN}}
+      PORT:
+        default: "8000"
+      DB_PATH: /data
+      PYTHONUNBUFFERED: "1"
+    
+    # Expose service publicly
+    public: true
+    
+    # Health check via HTTP
+    healthcheck:
+      enabled: true
+      path: /health
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+# Shared volumes configuration
+volumes:
+  bot-data:
+    size: 1Gi  # 1GB for bot data
+  backend-data:
+    size: 1Gi  # 1GB for backend data
