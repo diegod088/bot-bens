@@ -1,6 +1,0 @@
-[build]
-builder = "heroku/buildpacks:20"
-
-[deploy]
-# Comando por defecto para el servicio principal (backend)
-startCommand = "python run_backend.py"
