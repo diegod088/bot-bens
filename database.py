@@ -16,14 +16,20 @@ from cryptography.fernet import Fernet
 from dotenv import load_dotenv
 
 load_dotenv()
+
+# Configurar logger
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
 ENCRYPTION_KEY = os.getenv("ENCRYPTION_KEY")
 
 if not ENCRYPTION_KEY:
     logger.warning("⚠️ ENCRYPTION_KEY no encontrada en variables de entorno. Las funciones de sesión fallarán.")
 else:
     logger.info("✅ ENCRYPTION_KEY cargada correctamente.")
-
-logger = logging.getLogger(__name__)
 
 DB_FILE = "users.db"
 
