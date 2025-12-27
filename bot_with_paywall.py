@@ -64,7 +64,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Load environment variables
-TELEGRAM_TOKEN = '8548142676:AAHDA16IY6RcSg_69tVbYOg5y-73paK7FdM'
+TELEGRAM_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN') or os.getenv('TELEGRAM_TOKEN')
 TELEGRAM_API_ID = os.getenv('TELEGRAM_API_ID') or os.getenv('API_ID')
 TELEGRAM_API_HASH = os.getenv('TELEGRAM_API_HASH') or os.getenv('API_HASH')
 REQUIRED_VARS = {
@@ -466,36 +466,56 @@ class BotError:
 async def start_login(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Inicia el proceso de login"""
     user_id = update.effective_user.id
+    user = get_user(user_id)
+    lang = get_user_language(user) if user else 'es'
     
-    # Determine message object based on update type
-    if update.message:
-        message = update.message
-    elif update.callback_query:
-        message = update.callback_query.message
-    else:
-        return ConversationHandler.END
+    # Botón de cancelar
+    keyboard = [[InlineKeyboardButton("❌ Cancelar" if lang == 'es' else "❌ Cancel", callback_data="cancel_login")]]
+    reply_markup = InlineKeyboardMarkup(keyboard)
     
     if has_active_session(user_id):
-        await message.reply_text(
+        msg_text = (
             "✅ *Ya tienes una sesión activa*\n\n"
-            "Si quieres cambiar de cuenta, usa /logout primero.",
-            parse_mode='Markdown'
+            "Si quieres cambiar de cuenta, usa /logout primero."
         )
+        back_keyboard = [[InlineKeyboardButton(get_msg("btn_back_start", lang), callback_data="back_to_menu")]]
+        back_markup = InlineKeyboardMarkup(back_keyboard)
+        
+        if update.callback_query:
+            try:
+                await update.callback_query.edit_message_text(msg_text, parse_mode='Markdown', reply_markup=back_markup)
+            except Exception:
+                await update.callback_query.message.reply_text(msg_text, parse_mode='Markdown', reply_markup=back_markup)
+        else:
+            await update.message.reply_text(msg_text, parse_mode='Markdown', reply_markup=back_markup)
         return ConversationHandler.END
     
-    await message.reply_text(
+    msg_text = (
         "🔐 *Configuración de Cuenta*\n\n"
         "Para descargar contenido sin restricciones y evitar baneos, necesitas iniciar sesión con tu propia cuenta de Telegram.\n\n"
         "📱 *Paso 1:* Envíame tu número de teléfono en formato internacional.\n"
-        "Ejemplo: `+51999999999`",
-        parse_mode='Markdown'
+        "Ejemplo: `+51999999999`"
     )
+    
+    if update.callback_query:
+        try:
+            await update.callback_query.edit_message_text(msg_text, parse_mode='Markdown', reply_markup=reply_markup)
+        except Exception:
+            await update.callback_query.message.reply_text(msg_text, parse_mode='Markdown', reply_markup=reply_markup)
+    else:
+        await update.message.reply_text(msg_text, parse_mode='Markdown', reply_markup=reply_markup)
     return PHONE
 
 async def receive_phone(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Recibe el número de teléfono y envía el código"""
     user_id = update.effective_user.id
+    user = get_user(user_id)
+    lang = get_user_language(user) if user else 'es'
     phone = update.message.text.strip().replace(" ", "")
+    
+    # Botón de cancelar
+    keyboard = [[InlineKeyboardButton("❌ Cancelar" if lang == 'es' else "❌ Cancel", callback_data="cancel_login")]]
+    reply_markup = InlineKeyboardMarkup(keyboard)
     
     if not re.match(r'^\+\d+$', phone):
         await update.message.reply_text(
@@ -503,7 +523,8 @@ async def receive_phone(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "El número debe incluir el código de país y empezar con +.\n"
             "Ejemplo: `+51999999999`\n\n"
             "Inténtalo de nuevo:",
-            parse_mode='Markdown'
+            parse_mode='Markdown',
+            reply_markup=reply_markup
         )
         return PHONE
     
@@ -521,6 +542,10 @@ async def receive_phone(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 'phone_code_hash': sent.phone_code_hash
             }
             
+            # Botón de cancelar
+            cancel_keyboard = [[InlineKeyboardButton("❌ Cancelar", callback_data="cancel_login")]]
+            cancel_markup = InlineKeyboardMarkup(cancel_keyboard)
+            
             await msg.edit_text(
                 "📩 *Código enviado*\n\n"
                 "Revisa tus mensajes de Telegram (no SMS).\n\n"
@@ -528,7 +553,8 @@ async def receive_phone(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 "Telegram bloquea el código si lo envías tal cual.\n"
                 "Por favor, envíalo separando los números con un espacio o guión.\n\n"
                 "Ejemplo: Si el código es `12345`, envía `1 2 3 4 5` o `12-345`.",
-                parse_mode='Markdown'
+                parse_mode='Markdown',
+                reply_markup=cancel_markup
             )
             return CODE
         else:
@@ -564,11 +590,16 @@ async def receive_code(update: Update, context: ContextTypes.DEFAULT_TYPE):
         try:
             await client.sign_in(phone, code, phone_code_hash=phone_code_hash)
         except SessionPasswordNeededError:
+            # Botón de cancelar
+            cancel_keyboard = [[InlineKeyboardButton("❌ Cancelar", callback_data="cancel_login")]]
+            cancel_markup = InlineKeyboardMarkup(cancel_keyboard)
+            
             await msg.edit_text(
                 "🔐 *Verificación en 2 Pasos*\n\n"
                 "Tu cuenta tiene contraseña de doble factor (2FA).\n"
                 "Por favor, envíame tu contraseña para continuar.",
-                parse_mode='Markdown'
+                parse_mode='Markdown',
+                reply_markup=cancel_markup
             )
             return PASSWORD
             
@@ -578,18 +609,25 @@ async def receive_code(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await client.disconnect()
         del login_clients[user_id]
         
+        # Botón para volver al menú
+        success_keyboard = [[InlineKeyboardButton("◀️ Volver al menú", callback_data="back_to_menu")]]
+        success_markup = InlineKeyboardMarkup(success_keyboard)
+        
         await msg.edit_text(
             "✅ *¡Configuración Exitosa!*\n\n"
             "Tu cuenta ha sido vinculada correctamente.\n"
             "Ahora el bot usará tu propia cuenta para las descargas, lo que reduce el riesgo de baneo y mejora la velocidad.\n\n"
             "🚀 ¡Ya puedes descargar contenido!",
-            parse_mode='Markdown'
+            parse_mode='Markdown',
+            reply_markup=success_markup
         )
         return ConversationHandler.END
         
     except Exception as e:
         logger.error(f"Error signing in {user_id}: {e}")
-        await msg.edit_text(f"❌ *Error al verificar*\n\n`{str(e)}`\n\nIntenta de nuevo.", parse_mode='Markdown')
+        retry_keyboard = [[InlineKeyboardButton("◀️ Volver al menú", callback_data="back_to_menu")]]
+        retry_markup = InlineKeyboardMarkup(retry_keyboard)
+        await msg.edit_text(f"❌ *Error al verificar*\n\n`{str(e)}`\n\nIntenta de nuevo.", parse_mode='Markdown', reply_markup=retry_markup)
         return ConversationHandler.END
 
 async def receive_password(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -616,61 +654,83 @@ async def receive_password(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await client.disconnect()
         del login_clients[user_id]
         
+        # Botón para volver al menú
+        success_keyboard = [[InlineKeyboardButton("◀️ Volver al menú", callback_data="back_to_menu")]]
+        success_markup = InlineKeyboardMarkup(success_keyboard)
+        
         await msg.edit_text(
             "✅ *¡Configuración Exitosa!*\n\n"
             "Tu cuenta ha sido vinculada correctamente.\n"
             "Ahora el bot usará tu propia cuenta para las descargas.",
-            parse_mode='Markdown'
+            parse_mode='Markdown',
+            reply_markup=success_markup
         )
         return ConversationHandler.END
         
     except Exception as e:
         logger.error(f"Error with 2FA for {user_id}: {e}")
-        await msg.edit_text(f"❌ *Contraseña incorrecta o error*\n\n`{str(e)}`\n\nIntenta de nuevo.", parse_mode='Markdown')
+        retry_keyboard = [[InlineKeyboardButton("◀️ Volver al menú", callback_data="back_to_menu")]]
+        retry_markup = InlineKeyboardMarkup(retry_keyboard)
+        await msg.edit_text(f"❌ *Contraseña incorrecta o error*\n\n`{str(e)}`\n\nIntenta de nuevo.", parse_mode='Markdown', reply_markup=retry_markup)
         return ConversationHandler.END
 
 async def cancel_login(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Cancela el proceso de login"""
     user_id = update.effective_user.id
+    user = get_user(user_id)
+    lang = get_user_language(user) if user else 'es'
+    
     if user_id in login_clients:
-        await login_clients[user_id]['client'].disconnect()
+        try:
+            await login_clients[user_id]['client'].disconnect()
+        except Exception:
+            pass
         del login_clients[user_id]
     
-    # Determine message object based on update type
-    if update.message:
-        message = update.message
-    elif update.callback_query:
-        message = update.callback_query.message
-    else:
-        return ConversationHandler.END
-
-    await message.reply_text("❌ Configuración cancelada.", parse_mode='Markdown')
+    # Botón para volver al menú
+    keyboard = [[InlineKeyboardButton(get_msg("btn_back_start", lang), callback_data="back_to_menu")]]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    
+    msg_text = "❌ Configuración cancelada."
+    
+    if update.callback_query:
+        await update.callback_query.answer()
+        try:
+            await update.callback_query.edit_message_text(msg_text, parse_mode='Markdown', reply_markup=reply_markup)
+        except Exception:
+            await update.callback_query.message.reply_text(msg_text, parse_mode='Markdown', reply_markup=reply_markup)
+    elif update.message:
+        await update.message.reply_text(msg_text, parse_mode='Markdown', reply_markup=reply_markup)
+    
     return ConversationHandler.END
 
 async def logout_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Cierra la sesión del usuario"""
     user_id = update.effective_user.id
+    user = get_user(user_id)
+    lang = get_user_language(user) if user else 'es'
     
-    # Determine message object based on update type
-    if update.message:
-        message = update.message
-    elif update.callback_query:
-        message = update.callback_query.message
-    else:
-        return
-
+    # Build response message and keyboard with back button
+    keyboard = [[InlineKeyboardButton(get_msg("btn_back_start", lang), callback_data="back_to_menu")]]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    
     if delete_user_session(user_id):
-        await message.reply_text(
+        msg_text = (
             "👋 *Sesión cerrada*\n\n"
             "Se han borrado tus credenciales del bot.\n"
-            "Necesitarás usar /configurar nuevamente para descargar.",
-            parse_mode='Markdown'
+            "Necesitarás usar /configurar nuevamente para descargar."
         )
     else:
-        await message.reply_text(
-            "❌ No tienes una sesión activa.",
-            parse_mode='Markdown'
-        )
+        msg_text = "❌ No tienes una sesión activa."
+    
+    # Edit message if from callback, otherwise reply
+    if update.callback_query:
+        try:
+            await update.callback_query.edit_message_text(msg_text, parse_mode='Markdown', reply_markup=reply_markup)
+        except Exception:
+            await update.callback_query.message.reply_text(msg_text, parse_mode='Markdown', reply_markup=reply_markup)
+    elif update.message:
+        await update.message.reply_text(msg_text, parse_mode='Markdown', reply_markup=reply_markup)
 
 
 
@@ -1035,19 +1095,28 @@ async def show_premium_plans(query, context: ContextTypes.DEFAULT_TYPE, lang="es
     message += get_msg("plans_warning", lang)
     message += get_msg("plans_payment", lang)
     
-    # Add payment and channel buttons
+    # Add payment, channel and back buttons
     keyboard = [
         [InlineKeyboardButton(get_msg("btn_pay_stars", lang), callback_data="pay_premium")],
-        [InlineKeyboardButton(get_msg("btn_join_channel", lang), url="https://t.me/observer_bots")]
+        [InlineKeyboardButton(get_msg("btn_join_channel", lang), url="https://t.me/observer_bots")],
+        [InlineKeyboardButton(get_msg("btn_back_start", lang), callback_data="back_to_menu")]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     
-    await query.message.reply_text(message, parse_mode='Markdown', reply_markup=reply_markup)
+    try:
+        await query.edit_message_text(message, parse_mode='Markdown', reply_markup=reply_markup)
+    except Exception:
+        await query.message.reply_text(message, parse_mode='Markdown', reply_markup=reply_markup)
 
 
 async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle button callbacks"""
     query = update.callback_query
+    
+    if query.data == "cancel_login":
+        await query.answer()
+        await cancel_login(update, context)
+        return
     
     if query.data == "panel_menu":
         await query.answer()
@@ -1296,6 +1365,7 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if not user['premium']:
             keyboard.append([InlineKeyboardButton("💎 Obtener Premium", callback_data="show_premium")])
         keyboard.append([InlineKeyboardButton("🔄 Actualizar Stats", callback_data="refresh_stats")])
+        keyboard.append([InlineKeyboardButton("◀️ Volver al menú", callback_data="back_to_menu")])
         
         reply_markup = InlineKeyboardMarkup(keyboard)
         
@@ -1392,7 +1462,10 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         message += "╚═══════════════════════════════╝\n"
         message += "```"
         
-        keyboard = [[InlineKeyboardButton("🔄 Actualizar Stats", callback_data="refresh_admin_stats")]]
+        keyboard = [
+            [InlineKeyboardButton("🔄 Actualizar Stats", callback_data="refresh_admin_stats")],
+            [InlineKeyboardButton("◀️ Volver al menú", callback_data="back_to_menu")]
+        ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         
         try:
@@ -1422,11 +1495,8 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await send_premium_invoice_callback(update, context)
             logger.info(f"Invoice sent successfully to user {user_id}")
             
-            # Send confirmation message
-            await query.message.reply_text(
-                get_msg("invoice_sent", lang),
-                parse_mode='Markdown'
-            )
+            # Just answer the callback, invoice is already sent
+            await query.answer(get_msg("invoice_sent", lang).replace('*', '').replace('\\n', ' ')[:200], show_alert=True)
             
         except Exception as e:
             error_msg = str(e)
@@ -1434,15 +1504,10 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             
             # Check if it's a Telegram Stars configuration error
             if "currency" in error_msg.lower() or "stars" in error_msg.lower() or "xtr" in error_msg.lower():
-                await query.message.reply_text(
-                    get_msg("payment_not_configured", lang),
-                    parse_mode='Markdown'
-                )
+                await query.answer("⚠️ Pagos no configurados. Contacta soporte.", show_alert=True)
             else:
-                await query.message.reply_text(
-                    get_msg("payment_error", lang, error=error_msg[:100]),
-                    parse_mode='Markdown'
-                )
+                await query.answer(f"❌ Error: {error_msg[:100]}", show_alert=True)
+        return
     
     # Handle language change callbacks
     if query.data == "change_language":
@@ -1457,6 +1522,10 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             [
                 InlineKeyboardButton(get_msg("btn_spanish", lang), callback_data="set_lang_es"),
                 InlineKeyboardButton(get_msg("btn_english", lang), callback_data="set_lang_en")
+            ],
+            [
+                InlineKeyboardButton(get_msg("btn_portuguese", lang), callback_data="set_lang_pt"),
+                InlineKeyboardButton(get_msg("btn_italian", lang), callback_data="set_lang_it")
             ],
             [InlineKeyboardButton(get_msg("btn_back_start", lang), callback_data="back_to_menu")]
         ]
@@ -1557,6 +1626,100 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 welcome_message += get_msg("start_premium_active", lang)
         
         welcome_message += get_msg("start_cta", lang)
+        
+        keyboard = [
+            [InlineKeyboardButton(get_msg("btn_download_now", lang), callback_data="start_download")],
+            [
+                InlineKeyboardButton(get_msg("btn_how_to_use", lang), callback_data="show_guide"),
+                InlineKeyboardButton(get_msg("btn_plans", lang), callback_data="view_plans")
+            ],
+            [InlineKeyboardButton(get_msg("btn_change_language", lang), callback_data="change_language")],
+            [InlineKeyboardButton(get_msg("btn_support", lang), url="https://t.me/observer_bots")],
+            [InlineKeyboardButton(get_msg("btn_official_channel", lang), url="https://t.me/observer_bots")]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        await query.edit_message_text(welcome_message, parse_mode='Markdown', reply_markup=reply_markup)
+        return
+    
+    if query.data == "set_lang_pt":
+        await query.answer("✅ Idioma alterado para Português")
+        user_id = query.from_user.id
+        set_user_language(user_id, 'pt')
+        
+        # Return to main menu in Portuguese
+        user = get_user(user_id)
+        check_and_reset_daily_limits(user_id)
+        user = get_user(user_id)
+        
+        lang = 'pt'
+        
+        # Build welcome message
+        welcome_message = get_msg("start_welcome", lang)
+        welcome_message += get_msg("start_description", lang)
+        welcome_message += get_msg("start_divider", lang)
+        welcome_message += get_msg("start_how_to", lang)
+        welcome_message += get_msg("start_example", lang)
+        
+        if user['premium']:
+            if user.get('premium_until'):
+                expiry = datetime.fromisoformat(user['premium_until'])
+                days_left = (expiry - datetime.now()).days
+                welcome_message += get_msg("start_premium_plan", lang, 
+                                         expiry=expiry.strftime('%d/%m/%Y'),
+                                         days_left=days_left)
+            else:
+                welcome_message += get_msg("start_premium_active", lang)
+        else:
+            welcome_message += get_msg("start_free_plan", lang)
+            welcome_message += get_msg("start_upgrade", lang)
+        
+        keyboard = [
+            [InlineKeyboardButton(get_msg("btn_download_now", lang), callback_data="start_download")],
+            [
+                InlineKeyboardButton(get_msg("btn_how_to_use", lang), callback_data="show_guide"),
+                InlineKeyboardButton(get_msg("btn_plans", lang), callback_data="view_plans")
+            ],
+            [InlineKeyboardButton(get_msg("btn_change_language", lang), callback_data="change_language")],
+            [InlineKeyboardButton(get_msg("btn_support", lang), url="https://t.me/observer_bots")],
+            [InlineKeyboardButton(get_msg("btn_official_channel", lang), url="https://t.me/observer_bots")]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        await query.edit_message_text(welcome_message, parse_mode='Markdown', reply_markup=reply_markup)
+        return
+    
+    if query.data == "set_lang_it":
+        await query.answer("✅ Lingua cambiata in Italiano")
+        user_id = query.from_user.id
+        set_user_language(user_id, 'it')
+        
+        # Return to main menu in Italian
+        user = get_user(user_id)
+        check_and_reset_daily_limits(user_id)
+        user = get_user(user_id)
+        
+        lang = 'it'
+        
+        # Build welcome message
+        welcome_message = get_msg("start_welcome", lang)
+        welcome_message += get_msg("start_description", lang)
+        welcome_message += get_msg("start_divider", lang)
+        welcome_message += get_msg("start_how_to", lang)
+        welcome_message += get_msg("start_example", lang)
+        
+        if user['premium']:
+            if user.get('premium_until'):
+                expiry = datetime.fromisoformat(user['premium_until'])
+                days_left = (expiry - datetime.now()).days
+                welcome_message += get_msg("start_premium_plan", lang, 
+                                         expiry=expiry.strftime('%d/%m/%Y'),
+                                         days_left=days_left)
+            else:
+                welcome_message += get_msg("start_premium_active", lang)
+        else:
+            welcome_message += get_msg("start_free_plan", lang)
+            welcome_message += get_msg("start_upgrade", lang)
         
         keyboard = [
             [InlineKeyboardButton(get_msg("btn_download_now", lang), callback_data="start_download")],
@@ -2043,6 +2206,10 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             [
                 InlineKeyboardButton("🇪🇸 Español", callback_data="set_lang_es"),
                 InlineKeyboardButton("🇺🇸 English", callback_data="set_lang_en")
+            ],
+            [
+                InlineKeyboardButton("🇧🇷 Português", callback_data="set_lang_pt"),
+                InlineKeyboardButton("🇮🇹 Italiano", callback_data="set_lang_it")
             ]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
@@ -2085,6 +2252,7 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             InlineKeyboardButton(get_msg("btn_how_to_use", lang), callback_data="show_guide"),
             InlineKeyboardButton(get_msg("btn_plans", lang), callback_data="view_plans")
         ],
+        [InlineKeyboardButton(get_msg("btn_change_language", lang), callback_data="change_language")],
         [InlineKeyboardButton(get_msg("btn_support", lang), url="https://t.me/observer_bots")]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
@@ -2204,11 +2372,14 @@ async def panel_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     stats = get_user_usage_stats(user_id)
     if not stats:
         # Fallback if user not found (shouldn't happen usually)
-        await update.message.reply_text("Error loading profile.")
+        if update.callback_query:
+            await update.callback_query.message.reply_text("Error loading profile.")
+        else:
+            await update.message.reply_text("Error loading profile.")
         return
 
     # 1. Header & Plan Info
-    message = get_msg("panel_title", lang)
+    message = get_msg("panel_title", lang, user_name=update.effective_user.first_name)
     
     if stats['is_premium']:
         message += get_msg("panel_plan_premium", lang)
@@ -2387,7 +2558,10 @@ async def adminstats_command(update: Update, context: ContextTypes.DEFAULT_TYPE)
     message += "```"
     
     # Botón de actualización
-    keyboard = [[InlineKeyboardButton("🔄 Actualizar Stats", callback_data="refresh_admin_stats")]]
+    keyboard = [
+        [InlineKeyboardButton("🔄 Actualizar Stats", callback_data="refresh_admin_stats")],
+        [InlineKeyboardButton("◀️ Volver al menú", callback_data="back_to_menu")]
+    ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     
     await update.message.reply_text(message, parse_mode='Markdown', reply_markup=reply_markup)
@@ -2406,9 +2580,17 @@ async def stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = get_user(user_id)
     lang = get_user_language(user) if user else 'es'
     
+    # Initialize keyboard early
+    keyboard = []
+    
     if not user_stats:
         error_text = "❌ Error getting statistics" if lang == 'en' else "❌ Error al obtener estadísticas"
-        await update.message.reply_text(error_text)
+        keyboard.append([InlineKeyboardButton(get_msg("btn_back_start", lang), callback_data="back_to_menu")])
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        if update.callback_query:
+            await update.callback_query.edit_message_text(error_text, reply_markup=reply_markup)
+        else:
+            await update.message.reply_text(error_text, reply_markup=reply_markup)
         return
     
     # Header
@@ -2464,6 +2646,13 @@ async def stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
         message += f"📦 *APK:* `{apk['used']}/50`\n"
         message += f"   {get_progress_bar(apk['used'], 50)} `{apk['remaining']} {remaining_label}`\n\n"
+        
+        # Footer for premium
+        message += "```\n"
+        message += "╔═══════════════════════════════╗\n"
+        message += "║    Estadísticas personales    ║\n"
+        message += "╚═══════════════════════════════╝\n"
+        message += "```"
     else:
         free_plan = "FREE" if lang == 'en' else "GRATUITO"
         message += f"🆓 *Plan:* `{free_plan}`\n\n"
@@ -2522,14 +2711,24 @@ async def stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         message += "║    Estadísticas personales    ║\n"
         message += "╚═══════════════════════════════╝\n"
         message += "```"
-        if not user['premium']:
-            btn_premium = "💎 Get Premium" if lang == 'en' else "💎 Obtener Premium"
-            keyboard.append([InlineKeyboardButton(btn_premium, callback_data="show_premium")])
-        btn_refresh = "🔄 Refresh Stats" if lang == 'en' else "🔄 Actualizar Stats"
-        keyboard.append([InlineKeyboardButton(btn_refresh, callback_data="refresh_stats")])
-        
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        
+    
+    # Build keyboard buttons
+    if not user['premium']:
+        btn_premium = "💎 Get Premium" if lang == 'en' else "💎 Obtener Premium"
+        keyboard.append([InlineKeyboardButton(btn_premium, callback_data="show_premium")])
+    btn_refresh = "🔄 Refresh Stats" if lang == 'en' else "🔄 Actualizar Stats"
+    keyboard.append([InlineKeyboardButton(btn_refresh, callback_data="refresh_stats")])
+    keyboard.append([InlineKeyboardButton(get_msg("btn_back_start", lang), callback_data="back_to_menu")])
+    
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    
+    # Send or edit message based on context
+    if update.callback_query:
+        try:
+            await update.callback_query.edit_message_text(message, parse_mode='Markdown', reply_markup=reply_markup)
+        except Exception:
+            await update.callback_query.message.reply_text(message, parse_mode='Markdown', reply_markup=reply_markup)
+    else:
         await update.message.reply_text(message, parse_mode='Markdown', reply_markup=reply_markup)
 
 
