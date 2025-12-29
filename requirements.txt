@@ -2,4 +2,7 @@ python-telegram-bot==20.7
 telethon==1.36.0
 python-dotenv==1.0.0
 cryptography>=41.0.0
-
+Flask==3.0.0
+Werkzeug==3.0.1
+waitress==2.1.2
+gunicorn==21.2.0

@@ -101,6 +101,20 @@ def init_database():
             logger.info("Added phone_hash column to users table")
         except sqlite3.OperationalError:
             pass
+
+        # Add first_name column
+        try:
+            cursor.execute("ALTER TABLE users ADD COLUMN first_name TEXT DEFAULT NULL")
+            logger.info("Added first_name column to users table")
+        except sqlite3.OperationalError:
+            pass
+
+        # Add username column
+        try:
+            cursor.execute("ALTER TABLE users ADD COLUMN username TEXT DEFAULT NULL")
+            logger.info("Added username column to users table")
+        except sqlite3.OperationalError:
+            pass
         
         # Índices para mejorar rendimiento
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_premium ON users(premium)")
@@ -126,7 +140,7 @@ def get_user(user_id: int, auto_reset: bool = True) -> Optional[Dict]:
         cursor = conn.cursor()
         
         cursor.execute(
-            """SELECT user_id, downloads, premium, premium_level, premium_until, 
+            """SELECT user_id, first_name, username, downloads, premium, premium_level, premium_until, 
                daily_photo, daily_video, daily_music, daily_apk, last_reset, language 
                FROM users WHERE user_id = ?""",
             (user_id,)
@@ -180,25 +194,36 @@ def get_user(user_id: int, auto_reset: bool = True) -> Optional[Dict]:
         return user_data
 
 
-def create_user(user_id: int) -> bool:
+def create_user(user_id: int, first_name: str = None, username: str = None) -> bool:
     """
-    Create a new user in the database
+    Create a new user in the database or update existing info
     
     Args:
         user_id: Telegram user ID
+        first_name: User's first name
+        username: User's username (optional)
         
     Returns:
-        True si se creó, False si ya existía
+        True si se creó, False si ya existía (pero se actualizó info)
     """
     with get_db_connection() as conn:
         cursor = conn.cursor()
         
-        cursor.execute(
-            "INSERT OR IGNORE INTO users (user_id, downloads, premium) VALUES (?, 0, 0)",
-            (user_id,)
-        )
-        
-        created = cursor.rowcount > 0
+        # Intentar insertar
+        try:
+            cursor.execute(
+                "INSERT INTO users (user_id, first_name, username, downloads, premium) VALUES (?, ?, ?, 0, 0)",
+                (user_id, first_name, username)
+            )
+            return True
+        except sqlite3.IntegrityError:
+            # Si ya existe, actualizar nombre y username
+            if first_name or username:
+                cursor.execute(
+                    "UPDATE users SET first_name = ?, username = ? WHERE user_id = ?",
+                    (first_name, username, user_id)
+                )
+            return False
         if created:
             logger.info(f"Created new user: {user_id}")
         
@@ -404,12 +429,12 @@ def set_user_language(user_id: int, language: str = 'es'):
     
     Args:
         user_id: Telegram user ID
-        language: Language code ('es' or 'en')
+        language: Language code ('es', 'en', 'pt', 'it')
     """
     ensure_user_exists(user_id)
     
     # Validate language
-    if language not in ['es', 'en']:
+    if language not in ['es', 'en', 'pt', 'it']:
         language = 'es'
     
     with get_db_connection() as conn:
@@ -430,6 +455,7 @@ def set_user_language(user_id: int, language: str = 'es'):
 def check_and_reset_daily_limits(user_id: int) -> bool:
     """
     Check if 24 hours have passed and reset daily counters if needed
+    ONLY FOR PREMIUM USERS - Free users have permanent limits
     
     Args:
         user_id: Telegram user ID
@@ -439,6 +465,11 @@ def check_and_reset_daily_limits(user_id: int) -> bool:
     """
     user = get_user(user_id, auto_reset=False)
     if not user or not user['last_reset']:
+        return False
+    
+    # SOLO usuarios PREMIUM tienen reset de límites diarios
+    # Usuarios FREE tienen límites PERMANENTES (no se reinician)
+    if not user['premium']:
         return False
     
     last_reset_dt = datetime.fromisoformat(user['last_reset'])
@@ -459,7 +490,7 @@ def check_and_reset_daily_limits(user_id: int) -> bool:
             (user_id,)
         )
     
-    logger.info(f"Daily limits reset for user {user_id}")
+    logger.info(f"Daily limits reset for PREMIUM user {user_id}")
     return True
 
 

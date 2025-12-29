@@ -1,0 +1,384 @@
+{% extends "base.html" %}
+
+{% block title %}Actividad - Admin Console{% endblock %}
+
+{% block extra_css %}
+<style>
+    .activity-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+
+    .filter-group {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .filter-btn {
+        padding: 0.5rem 1rem;
+        border: 1px solid var(--border);
+        background: var(--bg-surface);
+        border-radius: var(--radius-md);
+        font-size: 0.875rem;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .filter-btn:hover, .filter-btn.active {
+        border-color: var(--primary);
+        color: var(--primary);
+    }
+
+    .filter-btn.active {
+        background: var(--primary-light);
+    }
+
+    .timeline {
+        position: relative;
+        padding-left: 2rem;
+    }
+
+    .timeline::before {
+        content: '';
+        position: absolute;
+        left: 0.75rem;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background: var(--border);
+    }
+
+    .timeline-item {
+        position: relative;
+        padding-bottom: 1.5rem;
+    }
+
+    .timeline-item:last-child {
+        padding-bottom: 0;
+    }
+
+    .timeline-dot {
+        position: absolute;
+        left: -1.25rem;
+        top: 0.25rem;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: var(--primary);
+        border: 2px solid var(--bg-surface);
+        box-shadow: 0 0 0 3px var(--primary-light);
+    }
+
+    .timeline-dot.download { background: var(--success); box-shadow: 0 0 0 3px var(--success-bg); }
+    .timeline-dot.premium { background: var(--warning); box-shadow: 0 0 0 3px var(--warning-bg); }
+    .timeline-dot.user { background: var(--primary); box-shadow: 0 0 0 3px var(--primary-light); }
+    .timeline-dot.error { background: var(--danger); box-shadow: 0 0 0 3px var(--danger-bg); }
+
+    .timeline-content {
+        background: var(--bg-surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        padding: 1rem 1.25rem;
+    }
+
+    .timeline-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 0.5rem;
+    }
+
+    .timeline-title {
+        font-weight: 500;
+        color: var(--text-primary);
+    }
+
+    .timeline-time {
+        font-size: 0.75rem;
+        color: var(--text-tertiary);
+    }
+
+    .timeline-desc {
+        font-size: 0.875rem;
+        color: var(--text-secondary);
+    }
+
+    .timeline-meta {
+        display: flex;
+        gap: 1rem;
+        margin-top: 0.75rem;
+        flex-wrap: wrap;
+    }
+
+    .meta-item {
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+        font-size: 0.75rem;
+        color: var(--text-tertiary);
+    }
+
+    .stats-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    .mini-stat {
+        background: var(--bg-surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        padding: 1rem;
+        text-align: center;
+    }
+
+    .mini-stat-value {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--text-primary);
+    }
+
+    .mini-stat-label {
+        font-size: 0.75rem;
+        color: var(--text-secondary);
+        margin-top: 0.25rem;
+    }
+
+    .load-more-container {
+        text-align: center;
+        padding: 2rem;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+        color: var(--text-secondary);
+    }
+
+    .empty-state svg {
+        margin-bottom: 1rem;
+        opacity: 0.5;
+    }
+
+    .date-separator {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin: 1.5rem 0;
+        color: var(--text-tertiary);
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+
+    .date-separator::before,
+    .date-separator::after {
+        content: '';
+        flex: 1;
+        height: 1px;
+        background: var(--border);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="activity-header">
+    <h1 class="section-title">Actividad Reciente</h1>
+    
+    <div class="filter-group">
+        <button class="filter-btn active" onclick="filterActivity('all', this)">Todos</button>
+        <button class="filter-btn" onclick="filterActivity('downloads', this)">Descargas</button>
+        <button class="filter-btn" onclick="filterActivity('premium', this)">Premium</button>
+        <button class="filter-btn" onclick="filterActivity('users', this)">Usuarios</button>
+    </div>
+</div>
+
+<!-- Quick Stats -->
+<div class="stats-row">
+    <div class="mini-stat">
+        <div class="mini-stat-value" id="stat-today-downloads">-</div>
+        <div class="mini-stat-label">Descargas Hoy</div>
+    </div>
+    <div class="mini-stat">
+        <div class="mini-stat-value" id="stat-new-users">-</div>
+        <div class="mini-stat-label">Nuevos Usuarios</div>
+    </div>
+    <div class="mini-stat">
+        <div class="mini-stat-value" id="stat-active-premium">-</div>
+        <div class="mini-stat-label">Premium Activos</div>
+    </div>
+    <div class="mini-stat">
+        <div class="mini-stat-value" id="stat-expiring-soon">-</div>
+        <div class="mini-stat-label">Expiran Pronto</div>
+    </div>
+</div>
+
+<div class="card">
+    <div id="activity-container">
+        <div class="loading-state" id="loading-activity" style="display: none;">
+            <div class="spinner"></div>
+            <p>Cargando actividad...</p>
+        </div>
+        
+        <div id="timeline-container" class="timeline">
+            <!-- Populated by JS -->
+        </div>
+        
+        <div id="empty-state" class="empty-state" style="display: none;">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            <h3>Sin Actividad</h3>
+            <p>No hay actividad reciente que mostrar</p>
+        </div>
+    </div>
+    
+    <div id="load-more-container" class="load-more-container" style="display: none;">
+        <button onclick="loadMoreActivity()" class="btn btn-outline">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.3"/></svg>
+            Cargar Más
+        </button>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let currentPage = 1;
+    let currentFilter = 'all';
+    let hasMore = true;
+
+    document.addEventListener('DOMContentLoaded', function() {
+        loadActivityStats();
+        loadActivity();
+    });
+
+    function loadActivityStats() {
+        fetch('/api/activity/stats')
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('stat-today-downloads').textContent = data.today_downloads || 0;
+                document.getElementById('stat-new-users').textContent = data.new_users_today || 0;
+                document.getElementById('stat-active-premium').textContent = data.active_premium || 0;
+                document.getElementById('stat-expiring-soon').textContent = data.expiring_soon || 0;
+            })
+            .catch(err => console.error('Error loading stats:', err));
+    }
+
+    function filterActivity(filter, btn) {
+        currentFilter = filter;
+        currentPage = 1;
+        
+        // Update button states
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        
+        // Clear and reload
+        document.getElementById('timeline-container').innerHTML = '';
+        loadActivity();
+    }
+
+    function loadActivity() {
+        const loading = document.getElementById('loading-activity');
+        const container = document.getElementById('timeline-container');
+        const emptyState = document.getElementById('empty-state');
+        const loadMore = document.getElementById('load-more-container');
+        
+        loading.style.display = 'block';
+        
+        fetch(`/api/activity?page=${currentPage}&filter=${currentFilter}`)
+            .then(res => res.json())
+            .then(data => {
+                loading.style.display = 'none';
+                
+                if (data.activities && data.activities.length > 0) {
+                    emptyState.style.display = 'none';
+                    renderActivities(data.activities);
+                    hasMore = data.has_more;
+                    loadMore.style.display = hasMore ? 'block' : 'none';
+                } else if (currentPage === 1) {
+                    emptyState.style.display = 'block';
+                    loadMore.style.display = 'none';
+                }
+            })
+            .catch(err => {
+                loading.style.display = 'none';
+                console.error('Error loading activity:', err);
+                Utils.showToast('Error al cargar actividad', 'error');
+            });
+    }
+
+    function loadMoreActivity() {
+        currentPage++;
+        loadActivity();
+    }
+
+    function renderActivities(activities) {
+        const container = document.getElementById('timeline-container');
+        let currentDate = '';
+        
+        activities.forEach(activity => {
+            const actDate = new Date(activity.timestamp).toLocaleDateString('es-ES', { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            });
+            
+            // Add date separator if new date
+            if (currentPage === 1 && actDate !== currentDate) {
+                currentDate = actDate;
+                const separator = document.createElement('div');
+                separator.className = 'date-separator';
+                separator.textContent = actDate;
+                container.appendChild(separator);
+            }
+            
+            const item = document.createElement('div');
+            item.className = 'timeline-item';
+            
+            const dotClass = activity.type === 'download' ? 'download' :
+                           activity.type === 'premium' ? 'premium' :
+                           activity.type === 'user' ? 'user' : '';
+            
+            const time = new Date(activity.timestamp).toLocaleTimeString('es-ES', { 
+                hour: '2-digit', 
+                minute: '2-digit' 
+            });
+            
+            item.innerHTML = `
+                <div class="timeline-dot ${dotClass}"></div>
+                <div class="timeline-content">
+                    <div class="timeline-header">
+                        <span class="timeline-title">${escapeHtml(activity.title)}</span>
+                        <span class="timeline-time">${time}</span>
+                    </div>
+                    <p class="timeline-desc">${escapeHtml(activity.description)}</p>
+                    ${activity.user_id ? `
+                    <div class="timeline-meta">
+                        <span class="meta-item">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                            ID: ${activity.user_id}
+                        </span>
+                        <a href="/user/${activity.user_id}" class="meta-item" style="color: var(--primary);">
+                            Ver usuario →
+                        </a>
+                    </div>
+                    ` : ''}
+                </div>
+            `;
+            
+            container.appendChild(item);
+        });
+    }
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+</script>
+{% endblock %}

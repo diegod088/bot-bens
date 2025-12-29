@@ -1,0 +1,313 @@
+{% extends "base.html" %}
+
+{% block title %}Detalle de Usuario - Admin Console{% endblock %}
+
+{% block extra_css %}
+<style>
+    .user-header {
+        display: flex;
+        align-items: center;
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .user-avatar {
+        width: 64px;
+        height: 64px;
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1.5rem;
+        font-weight: 600;
+        box-shadow: var(--shadow-md);
+    }
+
+    .user-info h1 {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-bottom: 0.5rem;
+    }
+
+    .user-meta {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+    }
+
+    .detail-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .detail-item {
+        background: var(--bg-body);
+        padding: 1rem;
+        border-radius: var(--radius-md);
+        border: 1px solid var(--border);
+    }
+
+    .detail-label {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--text-secondary);
+        margin-bottom: 0.5rem;
+        font-weight: 600;
+    }
+
+    .detail-value {
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: var(--text-primary);
+    }
+
+    .action-card {
+        background: var(--bg-surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .action-header {
+        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .action-title {
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: var(--text-primary);
+    }
+
+    .form-group {
+        margin-bottom: 1rem;
+    }
+
+    .form-label {
+        display: block;
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: var(--text-secondary);
+        margin-bottom: 0.5rem;
+    }
+
+    .form-input {
+        width: 100%;
+        padding: 0.5rem;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        font-size: 0.875rem;
+        outline: none;
+        transition: border-color 0.2s;
+    }
+
+    .form-input:focus {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 2px var(--primary-light);
+    }
+
+    .btn-group {
+        display: flex;
+        gap: 1rem;
+        margin-top: 1.5rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+    <a href="/users" class="btn btn-outline text-xs" style="display: inline-flex; align-items: center; gap: 0.5rem;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        Volver a Usuarios
+    </a>
+</div>
+
+<div class="card mb-6">
+    <div class="user-header">
+        <div class="user-avatar">
+            {{ user.user_id|string|slice(0, 2) }}
+        </div>
+        <div class="user-info">
+            {% if user.first_name %}
+                <h1>{{ user.first_name }}</h1>
+                {% if user.username %}
+                    <div style="color: var(--text-secondary); margin-bottom: 0.25rem; font-size: 1.1rem;">@{{ user.username }}</div>
+                {% endif %}
+                <div style="color: var(--text-tertiary); font-size: 0.9rem; margin-bottom: 0.5rem;">ID: {{ user.user_id }}</div>
+            {% elif user.username %}
+                <h1>@{{ user.username }}</h1>
+                <div style="color: var(--text-tertiary); font-size: 0.9rem; margin-bottom: 0.5rem;">ID: {{ user.user_id }}</div>
+            {% else %}
+                <h1>Usuario #{{ user.user_id }}</h1>
+            {% endif %}
+            <div class="user-meta">
+                {% if user.is_premium %}
+                    <span class="badge badge-premium">Premium</span>
+                    <span class="text-sm text-secondary">Vence: {{ user.premium_expiry }}</span>
+                {% else %}
+                    <span class="badge badge-free">Gratis</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="detail-grid">
+        <div class="detail-item">
+            <div class="detail-label">Fecha de Registro</div>
+            <div class="detail-value">{{ user.joined_date }}</div>
+        </div>
+        <div class="detail-item">
+            <div class="detail-label">Total Descargas</div>
+            <div class="detail-value">{{ user.downloads_count }}</div>
+        </div>
+        <div class="detail-item">
+            <div class="detail-label">Última Actividad</div>
+            <div class="detail-value">{{ user.last_active }}</div>
+        </div>
+        <div class="detail-item">
+            <div class="detail-label">Estado</div>
+            <div class="detail-value" style="color: var(--success);">Activo</div>
+        </div>
+    </div>
+</div>
+
+<div class="grid-stats" style="grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+    <!-- Premium Management -->
+    <div class="action-card">
+        <div class="action-header">
+            <h2 class="action-title">Gestión Premium</h2>
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label">Añadir días Premium</label>
+            <input type="number" id="days-input" class="form-input" value="30" min="1">
+        </div>
+
+        <div class="btn-group">
+            <button onclick="addPremium()" class="btn btn-primary" style="flex: 1;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+                Añadir Premium
+            </button>
+            {% if user.is_premium %}
+            <button onclick="removePremium()" class="btn btn-danger" style="flex: 1;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                Remover Premium
+            </button>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Danger Zone -->
+    <div class="action-card" style="border-color: var(--danger-bg);">
+        <div class="action-header" style="border-color: var(--danger-bg);">
+            <h2 class="action-title" style="color: var(--danger);">Zona de Peligro</h2>
+        </div>
+        
+        <p class="text-sm text-secondary mb-4">
+            Estas acciones son irreversibles. Ten cuidado al ejecutarlas.
+        </p>
+
+        <div class="btn-group">
+            <button onclick="resetStats()" class="btn btn-outline" style="border-color: var(--danger); color: var(--danger); flex: 1;">
+                Resetear Estadísticas
+            </button>
+            <button onclick="deleteUser()" class="btn btn-danger" style="flex: 1;">
+                Eliminar Usuario
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const userId = "{{ user.user_id }}";
+
+    function addPremium() {
+        const days = document.getElementById('days-input').value;
+        if (!days || days < 1) {
+            Utils.showToast('Por favor ingresa un número válido de días', 'error');
+            return;
+        }
+
+        fetch(`/api/user/${userId}/premium`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ days: parseInt(days) })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                Utils.showToast('Premium añadido exitosamente', 'success');
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                Utils.showToast(data.error || 'Error al añadir premium', 'error');
+            }
+        })
+        .catch(err => Utils.showToast('Error de conexión', 'error'));
+    }
+
+    function removePremium() {
+        if (!confirm('¿Estás seguro de quitar el estado Premium a este usuario?')) return;
+
+        fetch(`/api/user/${userId}/premium`, {
+            method: 'DELETE'
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                Utils.showToast('Premium removido exitosamente', 'success');
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                Utils.showToast(data.error || 'Error al remover premium', 'error');
+            }
+        })
+        .catch(err => Utils.showToast('Error de conexión', 'error'));
+    }
+
+    function resetStats() {
+        if (!confirm('¿Resetear contador de descargas? Esta acción pondrá a cero todas las estadísticas del usuario.')) return;
+        
+        fetch(`/api/user/${userId}/reset-stats`, {
+            method: 'POST'
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                Utils.showToast('Estadísticas reseteadas exitosamente', 'success');
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                Utils.showToast(data.error || 'Error al resetear estadísticas', 'error');
+            }
+        })
+        .catch(err => Utils.showToast('Error de conexión', 'error'));
+    }
+
+    function deleteUser() {
+        if (!confirm('¿ELIMINAR USUARIO? Esta acción no se puede deshacer.')) return;
+        if (!confirm('¿Estás ABSOLUTAMENTE seguro? Se perderán todos los datos del usuario.')) return;
+        
+        fetch(`/api/user/${userId}`, {
+            method: 'DELETE'
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                Utils.showToast('Usuario eliminado exitosamente', 'success');
+                setTimeout(() => window.location.href = '/users', 1000);
+            } else {
+                Utils.showToast(data.error || 'Error al eliminar usuario', 'error');
+            }
+        })
+        .catch(err => Utils.showToast('Error de conexión', 'error'));
+    }
+</script>
+{% endblock %}

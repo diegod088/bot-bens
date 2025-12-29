@@ -1,0 +1,546 @@
+{% extends "base.html" %}
+
+{% block title %}Configuración - Admin Console{% endblock %}
+
+{% block extra_css %}
+<style>
+    .settings-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+    
+    @media (min-width: 768px) {
+        .settings-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+
+    .settings-card {
+        background: var(--bg-surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        padding: 1.5rem;
+    }
+
+    .settings-header {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .settings-icon {
+        width: 40px;
+        height: 40px;
+        background: var(--primary-light);
+        border-radius: var(--radius-md);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--primary);
+    }
+
+    .settings-title {
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--text-primary);
+    }
+
+    .settings-subtitle {
+        font-size: 0.75rem;
+        color: var(--text-secondary);
+    }
+
+    .setting-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem 0;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .setting-row:last-child {
+        border-bottom: none;
+        padding-bottom: 0;
+    }
+
+    .setting-info {
+        flex: 1;
+    }
+
+    .setting-label {
+        font-weight: 500;
+        color: var(--text-primary);
+        margin-bottom: 0.25rem;
+    }
+
+    .setting-desc {
+        font-size: 0.75rem;
+        color: var(--text-secondary);
+    }
+
+    .setting-value {
+        font-size: 0.875rem;
+        color: var(--text-secondary);
+        background: var(--bg-body);
+        padding: 0.5rem 1rem;
+        border-radius: var(--radius-md);
+        font-family: 'SF Mono', Monaco, Consolas, monospace;
+    }
+
+    .toggle-switch {
+        position: relative;
+        width: 48px;
+        height: 24px;
+    }
+
+    .toggle-switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+
+    .toggle-slider {
+        position: absolute;
+        cursor: pointer;
+        inset: 0;
+        background-color: var(--border);
+        transition: 0.3s;
+        border-radius: 24px;
+    }
+
+    .toggle-slider:before {
+        position: absolute;
+        content: "";
+        height: 18px;
+        width: 18px;
+        left: 3px;
+        bottom: 3px;
+        background-color: white;
+        transition: 0.3s;
+        border-radius: 50%;
+        box-shadow: var(--shadow-sm);
+    }
+
+    .toggle-switch input:checked + .toggle-slider {
+        background-color: var(--primary);
+    }
+
+    .toggle-switch input:checked + .toggle-slider:before {
+        transform: translateX(24px);
+    }
+
+    .number-input {
+        width: 80px;
+        padding: 0.5rem;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        text-align: center;
+        font-size: 0.875rem;
+    }
+
+    .number-input:focus {
+        border-color: var(--primary);
+        outline: none;
+    }
+
+    .quick-actions {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+    }
+
+    .quick-action-btn {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 1.5rem;
+        background: var(--bg-body);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        cursor: pointer;
+        transition: all 0.2s;
+        text-decoration: none;
+    }
+
+    .quick-action-btn:hover {
+        border-color: var(--primary);
+        transform: translateY(-2px);
+    }
+
+    .quick-action-btn svg {
+        margin-bottom: 0.5rem;
+        color: var(--primary);
+    }
+
+    .quick-action-btn span {
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: var(--text-primary);
+    }
+
+    .backup-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.75rem;
+        background: var(--bg-body);
+        border-radius: var(--radius-md);
+        margin-bottom: 0.5rem;
+    }
+
+    .backup-item:last-child {
+        margin-bottom: 0;
+    }
+
+    .backup-info {
+        font-size: 0.875rem;
+    }
+
+    .backup-date {
+        color: var(--text-secondary);
+        font-size: 0.75rem;
+    }
+
+    .status-indicator {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 500;
+    }
+
+    .status-online {
+        background: var(--success-bg);
+        color: var(--success);
+    }
+
+    .status-offline {
+        background: var(--danger-bg);
+        color: var(--danger);
+    }
+
+    .full-width {
+        grid-column: 1 / -1;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="section-header mb-6">
+    <h1 class="section-title">Configuración</h1>
+    <span class="status-indicator status-online">
+        <span style="width: 6px; height: 6px; background: currentColor; border-radius: 50%;"></span>
+        Sistema Operativo
+    </span>
+</div>
+
+<div class="settings-grid">
+    <!-- System Status -->
+    <div class="settings-card">
+        <div class="settings-header">
+            <div class="settings-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+            </div>
+            <div>
+                <div class="settings-title">Estado del Sistema</div>
+                <div class="settings-subtitle">Información del servidor</div>
+            </div>
+        </div>
+        
+        <div class="setting-row">
+            <div class="setting-info">
+                <div class="setting-label">Estado del Bot</div>
+            </div>
+            <span id="bot-status" class="status-indicator status-online">
+                <span style="width: 6px; height: 6px; background: currentColor; border-radius: 50%;"></span>
+                Conectado
+            </span>
+        </div>
+        
+        <div class="setting-row">
+            <div class="setting-info">
+                <div class="setting-label">Base de Datos</div>
+            </div>
+            <span class="setting-value">SQLite</span>
+        </div>
+        
+        <div class="setting-row">
+            <div class="setting-info">
+                <div class="setting-label">Tamaño DB</div>
+            </div>
+            <span id="db-size" class="setting-value">Cargando...</span>
+        </div>
+        
+        <div class="setting-row">
+            <div class="setting-info">
+                <div class="setting-label">Hora del Servidor</div>
+            </div>
+            <span id="server-time" class="setting-value">{{ now }}</span>
+        </div>
+    </div>
+
+    <!-- Limits Configuration -->
+    <div class="settings-card">
+        <div class="settings-header">
+            <div class="settings-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+            </div>
+            <div>
+                <div class="settings-title">Límites Diarios</div>
+                <div class="settings-subtitle">Usuarios gratuitos</div>
+            </div>
+        </div>
+        
+        <div class="setting-row">
+            <div class="setting-info">
+                <div class="setting-label">📸 Fotos</div>
+                <div class="setting-desc">Máximo diario</div>
+            </div>
+            <span id="limit-photo" class="setting-value">{{ limits.photo if limits else 5 }}</span>
+        </div>
+        
+        <div class="setting-row">
+            <div class="setting-info">
+                <div class="setting-label">🎬 Videos</div>
+                <div class="setting-desc">Máximo diario</div>
+            </div>
+            <span id="limit-video" class="setting-value">{{ limits.video if limits else 3 }}</span>
+        </div>
+        
+        <div class="setting-row">
+            <div class="setting-info">
+                <div class="setting-label">🎵 Música</div>
+                <div class="setting-desc">Máximo diario</div>
+            </div>
+            <span id="limit-music" class="setting-value">{{ limits.music if limits else 5 }}</span>
+        </div>
+        
+        <div class="setting-row">
+            <div class="setting-info">
+                <div class="setting-label">📱 APKs</div>
+                <div class="setting-desc">Máximo diario</div>
+            </div>
+            <span id="limit-apk" class="setting-value">{{ limits.apk if limits else 2 }}</span>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="settings-card">
+        <div class="settings-header">
+            <div class="settings-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+            </div>
+            <div>
+                <div class="settings-title">Acciones Rápidas</div>
+                <div class="settings-subtitle">Operaciones del sistema</div>
+            </div>
+        </div>
+        
+        <div class="quick-actions">
+            <button onclick="exportUsers()" class="quick-action-btn">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                <span>Exportar CSV</span>
+            </button>
+            
+            <button onclick="resetAllDaily()" class="quick-action-btn">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.3"/></svg>
+                <span>Reset Diarios</span>
+            </button>
+            
+            <button onclick="backupDatabase()" class="quick-action-btn">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+                <span>Backup DB</span>
+            </button>
+            
+            <button onclick="cleanExpiredPremium()" class="quick-action-btn">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                <span>Limpiar Premium</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Statistics Summary -->
+    <div class="settings-card">
+        <div class="settings-header">
+            <div class="settings-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+            </div>
+            <div>
+                <div class="settings-title">Resumen Estadísticas</div>
+                <div class="settings-subtitle">Datos generales</div>
+            </div>
+        </div>
+        
+        <div class="setting-row">
+            <div class="setting-info">
+                <div class="setting-label">Total Usuarios</div>
+            </div>
+            <span id="stats-total-users" class="setting-value">-</span>
+        </div>
+        
+        <div class="setting-row">
+            <div class="setting-info">
+                <div class="setting-label">Usuarios Premium</div>
+            </div>
+            <span id="stats-premium-users" class="setting-value">-</span>
+        </div>
+        
+        <div class="setting-row">
+            <div class="setting-info">
+                <div class="setting-label">Premium Expirado</div>
+            </div>
+            <span id="stats-expired-premium" class="setting-value">-</span>
+        </div>
+        
+        <div class="setting-row">
+            <div class="setting-info">
+                <div class="setting-label">Usuarios Activos (24h)</div>
+            </div>
+            <span id="stats-active-users" class="setting-value">-</span>
+        </div>
+    </div>
+    
+    <!-- Danger Zone -->
+    <div class="settings-card full-width" style="border-color: var(--danger-bg);">
+        <div class="settings-header" style="border-color: var(--danger-bg);">
+            <div class="settings-icon" style="background: var(--danger-bg); color: var(--danger);">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+            </div>
+            <div>
+                <div class="settings-title" style="color: var(--danger);">Zona de Peligro</div>
+                <div class="settings-subtitle">Acciones irreversibles</div>
+            </div>
+        </div>
+        
+        <p class="text-sm text-secondary mb-4">
+            Estas acciones afectan a todos los usuarios y no se pueden deshacer. Úsalas con precaución.
+        </p>
+        
+        <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+            <button onclick="removeAllPremium()" class="btn" style="border: 1px solid var(--danger); color: var(--danger); background: transparent;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                Quitar TODOS los Premium
+            </button>
+            
+            <button onclick="deleteInactiveUsers()" class="btn" style="border: 1px solid var(--danger); color: var(--danger); background: transparent;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><line x1="18" y1="8" x2="23" y2="13"></line><line x1="23" y1="8" x2="18" y2="13"></line></svg>
+                Eliminar Inactivos (30+ días)
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Load system info on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        loadSystemInfo();
+        loadStats();
+    });
+
+    function loadSystemInfo() {
+        fetch('/api/system-info')
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('db-size').textContent = data.db_size || 'N/A';
+                document.getElementById('server-time').textContent = data.server_time || '-';
+            })
+            .catch(err => console.error('Error loading system info:', err));
+    }
+
+    function loadStats() {
+        fetch('/api/stats')
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('stats-total-users').textContent = data.total_users || 0;
+                document.getElementById('stats-premium-users').textContent = data.premium_users || 0;
+                document.getElementById('stats-expired-premium').textContent = data.expired_premium || 0;
+                document.getElementById('stats-active-users').textContent = data.active_today || 0;
+            })
+            .catch(err => console.error('Error loading stats:', err));
+    }
+
+    function exportUsers() {
+        Utils.showToast('Generando exportación...', 'info');
+        window.location.href = '/api/export/users';
+    }
+
+    function resetAllDaily() {
+        if (!confirm('¿Resetear contadores diarios de TODOS los usuarios?')) return;
+        
+        fetch('/api/admin/reset-all-daily', { method: 'POST' })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    Utils.showToast(`Reseteados ${data.affected} usuarios`, 'success');
+                } else {
+                    Utils.showToast(data.error || 'Error al resetear', 'error');
+                }
+            })
+            .catch(err => Utils.showToast('Error de conexión', 'error'));
+    }
+
+    function backupDatabase() {
+        Utils.showToast('Generando backup...', 'info');
+        window.location.href = '/api/export/backup';
+    }
+
+    function cleanExpiredPremium() {
+        if (!confirm('¿Limpiar todos los usuarios con premium expirado?')) return;
+        
+        fetch('/api/admin/clean-expired-premium', { method: 'POST' })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    Utils.showToast(`Limpiados ${data.affected} usuarios`, 'success');
+                    loadStats();
+                } else {
+                    Utils.showToast(data.error || 'Error al limpiar', 'error');
+                }
+            })
+            .catch(err => Utils.showToast('Error de conexión', 'error'));
+    }
+
+    function removeAllPremium() {
+        if (!confirm('¿QUITAR PREMIUM A TODOS LOS USUARIOS?')) return;
+        if (!confirm('Esta acción es IRREVERSIBLE. ¿Estás absolutamente seguro?')) return;
+        
+        fetch('/api/admin/remove-all-premium', { method: 'POST' })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    Utils.showToast(`Premium removido de ${data.affected} usuarios`, 'success');
+                    loadStats();
+                } else {
+                    Utils.showToast(data.error || 'Error', 'error');
+                }
+            })
+            .catch(err => Utils.showToast('Error de conexión', 'error'));
+    }
+
+    function deleteInactiveUsers() {
+        if (!confirm('¿ELIMINAR usuarios sin actividad en los últimos 30 días?')) return;
+        if (!confirm('Se eliminarán permanentemente. ¿Continuar?')) return;
+        
+        fetch('/api/admin/delete-inactive', { method: 'POST' })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    Utils.showToast(`Eliminados ${data.affected} usuarios inactivos`, 'success');
+                    loadStats();
+                } else {
+                    Utils.showToast(data.error || 'Error', 'error');
+                }
+            })
+            .catch(err => Utils.showToast('Error de conexión', 'error'));
+    }
+</script>
+{% endblock %}

@@ -87,9 +87,9 @@ PHONE, CODE, PASSWORD = range(10, 13)
 
 
 # Constants
-FREE_DOWNLOAD_LIMIT = 3  # Free users: 3 videos total before needing Premium
-FREE_PHOTO_DAILY_LIMIT = 10  # Free users: 10 photos daily
-PREMIUM_PRICE_STARS = 300  # Price in Telegram Stars (⭐)
+FREE_DOWNLOAD_LIMIT = 3  # Free users: 3 videos PERMANENTES (sin reset)
+FREE_PHOTO_LIMIT = 10  # Free users: 10 fotos PERMANENTES (sin reset)
+PREMIUM_PRICE_STARS = 399  # Price in Telegram Stars (⭐)
 
 # Premium daily limits (unlimited photos, 50 daily for others)
 PREMIUM_VIDEO_DAILY_LIMIT = 50
@@ -470,14 +470,11 @@ async def start_login(update: Update, context: ContextTypes.DEFAULT_TYPE):
     lang = get_user_language(user) if user else 'es'
     
     # Botón de cancelar
-    keyboard = [[InlineKeyboardButton("❌ Cancelar" if lang == 'es' else "❌ Cancel", callback_data="cancel_login")]]
+    keyboard = [[InlineKeyboardButton(get_msg("btn_cancel_login", lang), callback_data="cancel_login")]]
     reply_markup = InlineKeyboardMarkup(keyboard)
     
     if has_active_session(user_id):
-        msg_text = (
-            "✅ *Ya tienes una sesión activa*\n\n"
-            "Si quieres cambiar de cuenta, usa /logout primero."
-        )
+        msg_text = get_msg("login_already_active", lang)
         back_keyboard = [[InlineKeyboardButton(get_msg("btn_back_start", lang), callback_data="back_to_menu")]]
         back_markup = InlineKeyboardMarkup(back_keyboard)
         
@@ -490,12 +487,7 @@ async def start_login(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await update.message.reply_text(msg_text, parse_mode='Markdown', reply_markup=back_markup)
         return ConversationHandler.END
     
-    msg_text = (
-        "🔐 *Configuración de Cuenta*\n\n"
-        "Para descargar contenido sin restricciones y evitar baneos, necesitas iniciar sesión con tu propia cuenta de Telegram.\n\n"
-        "📱 *Paso 1:* Envíame tu número de teléfono en formato internacional.\n"
-        "Ejemplo: `+51999999999`"
-    )
+    msg_text = get_msg("login_setup_title", lang)
     
     if update.callback_query:
         try:
@@ -514,21 +506,18 @@ async def receive_phone(update: Update, context: ContextTypes.DEFAULT_TYPE):
     phone = update.message.text.strip().replace(" ", "")
     
     # Botón de cancelar
-    keyboard = [[InlineKeyboardButton("❌ Cancelar" if lang == 'es' else "❌ Cancel", callback_data="cancel_login")]]
+    keyboard = [[InlineKeyboardButton(get_msg("btn_cancel_login", lang), callback_data="cancel_login")]]
     reply_markup = InlineKeyboardMarkup(keyboard)
     
     if not re.match(r'^\+\d+$', phone):
         await update.message.reply_text(
-            "❌ *Formato incorrecto*\n\n"
-            "El número debe incluir el código de país y empezar con +.\n"
-            "Ejemplo: `+51999999999`\n\n"
-            "Inténtalo de nuevo:",
+            get_msg("login_invalid_phone", lang),
             parse_mode='Markdown',
             reply_markup=reply_markup
         )
         return PHONE
     
-    msg = await update.message.reply_text("🔄 Conectando con Telegram...")
+    msg = await update.message.reply_text(get_msg("login_connecting", lang))
     
     try:
         client = TelegramClient(StringSession(), int(TELEGRAM_API_ID), TELEGRAM_API_HASH)
@@ -543,16 +532,11 @@ async def receive_phone(update: Update, context: ContextTypes.DEFAULT_TYPE):
             }
             
             # Botón de cancelar
-            cancel_keyboard = [[InlineKeyboardButton("❌ Cancelar", callback_data="cancel_login")]]
+            cancel_keyboard = [[InlineKeyboardButton(get_msg("btn_cancel_login", lang), callback_data="cancel_login")]]
             cancel_markup = InlineKeyboardMarkup(cancel_keyboard)
             
             await msg.edit_text(
-                "📩 *Código enviado*\n\n"
-                "Revisa tus mensajes de Telegram (no SMS).\n\n"
-                "⚠️ *IMPORTANTE:*\n"
-                "Telegram bloquea el código si lo envías tal cual.\n"
-                "Por favor, envíalo separando los números con un espacio o guión.\n\n"
-                "Ejemplo: Si el código es `12345`, envía `1 2 3 4 5` o `12-345`.",
+                get_msg("login_code_sent", lang),
                 parse_mode='Markdown',
                 reply_markup=cancel_markup
             )
@@ -565,18 +549,20 @@ async def receive_phone(update: Update, context: ContextTypes.DEFAULT_TYPE):
             
     except Exception as e:
         logger.error(f"Error sending code to {user_id}: {e}")
-        await msg.edit_text(f"❌ *Error al conectar*\n\n`{str(e)}`\n\nIntenta de nuevo con /configurar", parse_mode='Markdown')
+        await msg.edit_text(get_msg("login_error_connect", lang, error=str(e)), parse_mode='Markdown')
         return ConversationHandler.END
 
 async def receive_code(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Recibe el código de inicio de sesión"""
     user_id = update.effective_user.id
+    user = get_user(user_id)
+    lang = get_user_language(user) if user else 'es'
     # Limpiar el código de espacios, guiones y otros caracteres no numéricos
     raw_code = update.message.text
     code = ''.join(filter(str.isdigit, raw_code))
     
     if user_id not in login_clients:
-        await update.message.reply_text("❌ Sesión expirada. Usa /configurar de nuevo.")
+        await update.message.reply_text(get_msg("login_session_expired", lang))
         return ConversationHandler.END
     
     data = login_clients[user_id]
@@ -584,20 +570,18 @@ async def receive_code(update: Update, context: ContextTypes.DEFAULT_TYPE):
     phone = data['phone']
     phone_code_hash = data.get('phone_code_hash')
     
-    msg = await update.message.reply_text("🔄 Verificando código...")
+    msg = await update.message.reply_text(get_msg("login_verifying_code", lang))
     
     try:
         try:
             await client.sign_in(phone, code, phone_code_hash=phone_code_hash)
         except SessionPasswordNeededError:
             # Botón de cancelar
-            cancel_keyboard = [[InlineKeyboardButton("❌ Cancelar", callback_data="cancel_login")]]
+            cancel_keyboard = [[InlineKeyboardButton(get_msg("btn_cancel_login", lang), callback_data="cancel_login")]]
             cancel_markup = InlineKeyboardMarkup(cancel_keyboard)
             
             await msg.edit_text(
-                "🔐 *Verificación en 2 Pasos*\n\n"
-                "Tu cuenta tiene contraseña de doble factor (2FA).\n"
-                "Por favor, envíame tu contraseña para continuar.",
+                get_msg("login_2fa_required", lang),
                 parse_mode='Markdown',
                 reply_markup=cancel_markup
             )
@@ -610,14 +594,11 @@ async def receive_code(update: Update, context: ContextTypes.DEFAULT_TYPE):
         del login_clients[user_id]
         
         # Botón para volver al menú
-        success_keyboard = [[InlineKeyboardButton("◀️ Volver al menú", callback_data="back_to_menu")]]
+        success_keyboard = [[InlineKeyboardButton(get_msg("btn_back_menu", lang), callback_data="back_to_menu")]]
         success_markup = InlineKeyboardMarkup(success_keyboard)
         
         await msg.edit_text(
-            "✅ *¡Configuración Exitosa!*\n\n"
-            "Tu cuenta ha sido vinculada correctamente.\n"
-            "Ahora el bot usará tu propia cuenta para las descargas, lo que reduce el riesgo de baneo y mejora la velocidad.\n\n"
-            "🚀 ¡Ya puedes descargar contenido!",
+            get_msg("login_success", lang),
             parse_mode='Markdown',
             reply_markup=success_markup
         )
@@ -625,25 +606,27 @@ async def receive_code(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
     except Exception as e:
         logger.error(f"Error signing in {user_id}: {e}")
-        retry_keyboard = [[InlineKeyboardButton("◀️ Volver al menú", callback_data="back_to_menu")]]
+        retry_keyboard = [[InlineKeyboardButton(get_msg("btn_back_menu", lang), callback_data="back_to_menu")]]
         retry_markup = InlineKeyboardMarkup(retry_keyboard)
-        await msg.edit_text(f"❌ *Error al verificar*\n\n`{str(e)}`\n\nIntenta de nuevo.", parse_mode='Markdown', reply_markup=retry_markup)
+        await msg.edit_text(get_msg("login_wrong_code", lang), parse_mode='Markdown', reply_markup=retry_markup)
         return ConversationHandler.END
 
 async def receive_password(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Recibe la contraseña 2FA"""
     user_id = update.effective_user.id
+    user = get_user(user_id)
+    lang = get_user_language(user) if user else 'es'
     password = update.message.text
     
     if user_id not in login_clients:
-        await update.message.reply_text("❌ Sesión expirada. Usa /configurar de nuevo.")
+        await update.message.reply_text(get_msg("login_session_expired", lang))
         return ConversationHandler.END
     
     data = login_clients[user_id]
     client = data['client']
     phone = data['phone']
     
-    msg = await update.message.reply_text("🔄 Verificando contraseña...")
+    msg = await update.message.reply_text(get_msg("login_verifying_code", lang))
     
     try:
         await client.sign_in(password=password)
@@ -655,13 +638,11 @@ async def receive_password(update: Update, context: ContextTypes.DEFAULT_TYPE):
         del login_clients[user_id]
         
         # Botón para volver al menú
-        success_keyboard = [[InlineKeyboardButton("◀️ Volver al menú", callback_data="back_to_menu")]]
+        success_keyboard = [[InlineKeyboardButton(get_msg("btn_back_menu", lang), callback_data="back_to_menu")]]
         success_markup = InlineKeyboardMarkup(success_keyboard)
         
         await msg.edit_text(
-            "✅ *¡Configuración Exitosa!*\n\n"
-            "Tu cuenta ha sido vinculada correctamente.\n"
-            "Ahora el bot usará tu propia cuenta para las descargas.",
+            get_msg("login_success", lang),
             parse_mode='Markdown',
             reply_markup=success_markup
         )
@@ -669,9 +650,9 @@ async def receive_password(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
     except Exception as e:
         logger.error(f"Error with 2FA for {user_id}: {e}")
-        retry_keyboard = [[InlineKeyboardButton("◀️ Volver al menú", callback_data="back_to_menu")]]
+        retry_keyboard = [[InlineKeyboardButton(get_msg("btn_back_menu", lang), callback_data="back_to_menu")]]
         retry_markup = InlineKeyboardMarkup(retry_keyboard)
-        await msg.edit_text(f"❌ *Contraseña incorrecta o error*\n\n`{str(e)}`\n\nIntenta de nuevo.", parse_mode='Markdown', reply_markup=retry_markup)
+        await msg.edit_text(get_msg("login_wrong_password", lang), parse_mode='Markdown', reply_markup=retry_markup)
         return ConversationHandler.END
 
 async def cancel_login(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -691,7 +672,7 @@ async def cancel_login(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [[InlineKeyboardButton(get_msg("btn_back_start", lang), callback_data="back_to_menu")]]
     reply_markup = InlineKeyboardMarkup(keyboard)
     
-    msg_text = "❌ Configuración cancelada."
+    msg_text = get_msg("login_cancelled", lang)
     
     if update.callback_query:
         await update.callback_query.answer()
@@ -715,13 +696,9 @@ async def logout_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     reply_markup = InlineKeyboardMarkup(keyboard)
     
     if delete_user_session(user_id):
-        msg_text = (
-            "👋 *Sesión cerrada*\n\n"
-            "Se han borrado tus credenciales del bot.\n"
-            "Necesitarás usar /configurar nuevamente para descargar."
-        )
+        msg_text = get_msg("logout_success", lang)
     else:
-        msg_text = "❌ No tienes una sesión activa."
+        msg_text = get_msg("logout_no_session", lang)
     
     # Edit message if from callback, otherwise reply
     if update.callback_query:
@@ -1144,22 +1121,41 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
     
     if query.data == "start_download":
-        # Iniciar flujo guiado
+        # Mensaje simple y directo
         await query.answer()
         user_id = query.from_user.id
         user = get_user(user_id)
         lang = get_user_language(user)
-        first_name = query.from_user.first_name
         
-        message = get_msg("download_greeting", lang, name=first_name)
-        message += get_msg("download_step_1", lang)
-        message += get_msg("download_supported", lang)
-        message += get_msg("download_or_command", lang)
+        if lang == 'es':
+            message = (
+                "📥 *Envíame el enlace del mensaje*\n\n"
+                "Ejemplo: `https://t.me/canal/123`\n\n"
+                "💡 Copia el enlace del mensaje en Telegram y pégalo aquí."
+            )
+        elif lang == 'en':
+            message = (
+                "📥 *Send me the message link*\n\n"
+                "Example: `https://t.me/channel/123`\n\n"
+                "💡 Copy the message link from Telegram and paste it here."
+            )
+        elif lang == 'pt':
+            message = (
+                "📥 *Envie-me o link da mensagem*\n\n"
+                "Exemplo: `https://t.me/canal/123`\n\n"
+                "💡 Copie o link da mensagem no Telegram e cole aqui."
+            )
+        else:  # Italian
+            message = (
+                "📥 *Inviami il link del messaggio*\n\n"
+                "Esempio: `https://t.me/canale/123`\n\n"
+                "💡 Copia il link del messaggio da Telegram e incollalo qui."
+            )
         
         keyboard = [[InlineKeyboardButton(get_msg("btn_back_start", lang), callback_data="back_to_menu")]]
         reply_markup = InlineKeyboardMarkup(keyboard)
         
-        await query.edit_message_text(message, parse_mode='HTML', reply_markup=reply_markup)
+        await query.edit_message_text(message, parse_mode='Markdown', reply_markup=reply_markup)
         return
     
     if query.data == "view_plans":
@@ -1233,7 +1229,7 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         else:
             welcome_message += get_msg("start_free_plan", lang,
                                      daily_photo=user['daily_photo'],
-                                     photo_limit=FREE_PHOTO_DAILY_LIMIT,
+                                     photo_limit=FREE_PHOTO_LIMIT,
                                      downloads=user['downloads'],
                                      download_limit=FREE_DOWNLOAD_LIMIT)
         
@@ -1262,7 +1258,7 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         user_name = query.from_user.first_name or "Usuario"
         
         check_and_reset_daily_limits(user_id)
-        user_stats = get_user_usage_stats(user_id, FREE_DOWNLOAD_LIMIT, FREE_PHOTO_DAILY_LIMIT)
+        user_stats = get_user_usage_stats(user_id, FREE_DOWNLOAD_LIMIT, FREE_PHOTO_LIMIT)
         user = get_user(user_id)
         
         if not user_stats:
@@ -1339,15 +1335,14 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             photos = user_stats['photos']
             if photos['remaining'] > 0:
                 dots = "🟩" * photos['remaining'] + "⬜" * (photos['limit'] - photos['remaining'])
-                message += f"📸 *Fotos Hoy:* {photos['used']}/{photos['limit']}\n"
+                message += f"📸 *Fotos:* {photos['used']}/{photos['limit']}\n"
                 message += f"   {dots}\n"
                 message += f"   Quedan *{photos['remaining']}* {'fotos' if photos['remaining'] > 1 else 'foto'}\n"
                 if photos['remaining'] <= 2:
                     message += "   ⚠️ Pocas restantes\n"
             else:
                 message += f"📸 *Fotos:* {photos['used']}/{photos['limit']} ❌\n"
-                message += "   🔒 Límite diario alcanzado\n"
-                message += "   🔄 Se reinicia en 24h\n"
+                message += "   🔒 Límite alcanzado\n"
             message += "\n"
             
             # Contenido premium bloqueado
@@ -1769,8 +1764,8 @@ async def send_premium_invoice_callback(update: Update, context: ContextTypes.DE
                 "El bot está configurándose para aceptar pagos con Telegram Stars.\n\n"
                 "━━━━━━━━━━━━━━━━━━━━\n\n"
                 "💡 *Mientras tanto:*\n"
-                "• Disfruta de las 3 descargas gratuitas de videos\n"
-                "• 10 fotos diarias gratis\n\n"
+                "• Disfruta de 3 videos gratuitos\n"
+                "• 10 fotos gratuitas\n\n"
                 "📢 Únete al canal para actualizaciones:\n"
                 "@observer_bots\n\n"
                 "━━━━━━━━━━━━━━━━━━━━\n\n"
@@ -1812,10 +1807,11 @@ async def start_download_flow(update: Update, context: ContextTypes.DEFAULT_TYPE
     """Inicia el flujo guiado de descarga"""
     user_id = update.effective_user.id
     first_name = update.effective_user.first_name
+    username = update.effective_user.username
     
     # Ensure user exists
     if not get_user(user_id):
-        create_user(user_id)
+        create_user(user_id, first_name=first_name, username=username)
     
     # Ensure admins have premium
     ensure_admin_premium(user_id)
@@ -2059,6 +2055,9 @@ async def handle_media_download(update: Update, context: ContextTypes.DEFAULT_TY
     check_and_reset_daily_limits(user_id)
     user = get_user(user_id)  # Refrescar
     
+    # Log para depuración de límites
+    logger.info(f"Checking limits for user {user_id}: Premium={user['premium']}, Downloads={user['downloads']}, Limit={FREE_DOWNLOAD_LIMIT}")
+
     # Verificar si puede descargar
     can_download, error_type, error_data = check_download_limits(user, content_type)
     
@@ -2114,7 +2113,7 @@ async def handle_media_download(update: Update, context: ContextTypes.DEFAULT_TY
             
             # Verificar si debe mostrar advertencia de uso bajo (solo usuarios gratuitos)
             if not user['premium']:
-                warning = check_low_usage_warning(user_id, FREE_DOWNLOAD_LIMIT, FREE_PHOTO_DAILY_LIMIT)
+                warning = check_low_usage_warning(user_id, FREE_DOWNLOAD_LIMIT, FREE_PHOTO_LIMIT)
                 if warning.get('show_warning'):
                     await UsageNotification.send_low_usage_warning(update.message, warning)
         else:
@@ -2139,10 +2138,10 @@ def check_download_limits(user: dict, content_type: str) -> tuple[bool, str, dic
         if is_premium:
             return True, None, {}
         else:
-            if user['daily_photo'] >= FREE_PHOTO_DAILY_LIMIT:
+            if user['daily_photo'] >= FREE_PHOTO_LIMIT:
                 return False, 'daily_limit', {
                     'current': user['daily_photo'],
-                    'limit': FREE_PHOTO_DAILY_LIMIT
+                    'limit': FREE_PHOTO_LIMIT
                 }
             return True, None, {}
     
@@ -2180,13 +2179,14 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle /start command"""
     user_id = update.effective_user.id
     first_name = update.effective_user.first_name
+    username = update.effective_user.username
     
     # Check if user exists (first time user)
     is_new_user = not get_user(user_id)
     
     # Ensure user exists in database
     if is_new_user:
-        create_user(user_id)
+        create_user(user_id, first_name=first_name, username=username)
     
     # Ensure admins have premium
     ensure_admin_premium(user_id)
@@ -2576,7 +2576,7 @@ async def stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     check_and_reset_daily_limits(user_id)
     
     # Obtener estadísticas personales
-    user_stats = get_user_usage_stats(user_id, FREE_DOWNLOAD_LIMIT, FREE_PHOTO_DAILY_LIMIT)
+    user_stats = get_user_usage_stats(user_id, FREE_DOWNLOAD_LIMIT, FREE_PHOTO_LIMIT)
     user = get_user(user_id)
     lang = get_user_language(user) if user else 'es'
     
@@ -2684,8 +2684,8 @@ async def stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             message += f"   🔴🔴🔴 `{limit_reached}`\n"
         message += "\n"
         
-        # Fotos (diarias)
-        message += f"📸 *Fotos:* `{photos['used']}/{photos['limit']}` {today_label}\n"
+        # Fotos (permanentes para FREE)
+        message += f"📸 *Fotos:* `{photos['used']}/{photos['limit']}`\n"
         if photos['remaining'] > 0:
             filled = min(photos['used'], photos['limit'])
             bar = "🟩" * filled + "⬜" * (photos['limit'] - filled)
@@ -2695,15 +2695,13 @@ async def stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             if photos['remaining'] <= 2:
                 message += f"   ⚠️ *{few_left}*\n"
         else:
-            message += f"📸 *Fotos:* {photos['used']}/{photos['limit']} ❌\n"
-            message += "   🔒 Límite diario alcanzado\n"
-            message += "   🔄 Se reinicia en 24h\n"
-            message += "\n"
-            
-            # Contenido premium bloqueado
-            message += "🔒 *Requiere Premium:*\n"
-            message += "   🎵 Música\n"
-            message += "   📦 APK\n"
+            message += f"   🔴 `{limit_reached}`\n"
+        message += "\n"
+        
+        # Contenido premium bloqueado
+        message += "🔒 *Requiere Premium:*\n"
+        message += "   🎵 Música\n"
+        message += "   📦 APK\n"
         
         # Footer
         message += "```\n"
@@ -2907,23 +2905,40 @@ async def handle_message_logic(update, context, client, link, parsed, user_id, u
         
         # Now process the download
         messages_to_process = album_messages if album_messages else [message]
+        downloaded_count = 0
         
         for idx, msg in enumerate(messages_to_process, 1):
+            # Refrescar datos del usuario antes de cada archivo
+            user = get_user(user_id)
+            content_type = detect_content_type(msg)
+            # BLOQUEO para usuarios FREE
+            if not user['premium']:
+                if content_type == 'video' and user['downloads'] >= FREE_DOWNLOAD_LIMIT:
+                    await update.message.reply_text(f"⚠️ Límite de videos alcanzado ({user['downloads']}/{FREE_DOWNLOAD_LIMIT}).\n\n💎 /premium para descargas ilimitadas.")
+                    break
+                if content_type == 'photo' and user['daily_photo'] >= FREE_PHOTO_LIMIT:
+                    await update.message.reply_text(f"⚠️ Límite de fotos alcanzado ({user['daily_photo']}/{FREE_PHOTO_LIMIT}).\n\n💎 /premium para fotos ilimitadas.")
+                    break
             if len(messages_to_process) > 1:
-                status = await update.message.reply_text(f"📤 Enviando {idx}/{len(messages_to_process)}...")
+                status = await update.message.reply_text(f"📥 Descargando {idx}/{len(messages_to_process)}...")
             else:
-                status = await update.message.reply_text("📤 Enviando...")
+                status = await update.message.reply_text("📥 Descargando...")
             try:
-                await context.bot.forward_message(chat_id=user_id, from_chat_id=msg.chat_id, message_id=msg.id)
-                await status.delete()
-                # Increment counters...
-            except Exception:
-                await status.edit_text(f"📥 Descargando {idx}/{len(messages_to_process)}..." if len(messages_to_process) > 1 else "📥 Descargando...")
                 await download_and_send_media(msg, user_id, context.bot)
                 await status.delete()
-                # Increment counters...
-        
-        await update.message.reply_text("✅ *Descarga Completada*", parse_mode='Markdown')
+                downloaded_count += 1
+                # Incrementar contadores SOLO si fue exitoso
+                user = get_user(user_id)
+                if not user['premium']:
+                    if content_type == 'video':
+                        increment_total_downloads(user_id)
+                    elif content_type == 'photo':
+                        increment_daily_counter(user_id, 'photo')
+            except Exception as e:
+                logger.error(f"Error downloading media: {e}")
+                await status.edit_text(f"❌ Error al descargar: {str(e)[:50]}")
+        if downloaded_count > 0:
+            await update.message.reply_text("✅ *Descarga Completada*", parse_mode='Markdown')
 
     except Exception as e:
         logger.error(f"Error in handle_message_logic: {e}")
@@ -2945,7 +2960,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     # Ensure user exists
     if not get_user(user_id):
-        create_user(user_id)
+        create_user(user_id, first_name=update.effective_user.first_name, username=update.effective_user.username)
     
     # Ensure admins have premium
     ensure_admin_premium(user_id)
@@ -2998,7 +3013,7 @@ async def handle_message_old(update: Update, context: ContextTypes.DEFAULT_TYPE)
     
     # Ensure user exists
     if not get_user(user_id):
-        create_user(user_id)
+        create_user(user_id, first_name=update.effective_user.first_name, username=update.effective_user.username)
     
     # Ensure admins have premium
     ensure_admin_premium(user_id)
@@ -3408,14 +3423,13 @@ async def handle_message_old(update: Update, context: ContextTypes.DEFAULT_TYPE)
         # Check photo limits
         if content_type == 'photo':
             if not user['premium']:
-                # FREE users: 10 photos daily
-                check_and_reset_daily_limits(user_id)
-                user = get_user(user_id)  # Refresh after potential reset
+                # FREE users: límite PERMANENTE de fotos
+                user = get_user(user_id)
                 
-                if user['daily_photo'] >= FREE_PHOTO_DAILY_LIMIT:
+                if user['daily_photo'] >= FREE_PHOTO_LIMIT:
                     await update.message.reply_text(
-                        "⚠️ *Límite Diario Alcanzado*\n\n"
-                        f"Has descargado {user['daily_photo']}/{FREE_PHOTO_DAILY_LIMIT} fotos hoy.\n\n"
+                        "⚠️ *Límite de Fotos Alcanzado*\n\n"
+                        f"Has usado tus {FREE_PHOTO_LIMIT} fotos gratuitas.\n\n"
                         "━━━━━━━━━━━━━━━━━━━━\n\n"
                         "💎 *Con Premium obtienes:*\n"
                         "✅ Fotos: Ilimitadas\n"
@@ -3571,37 +3585,47 @@ async def handle_message_old(update: Update, context: ContextTypes.DEFAULT_TYPE)
                     )
                 continue
             # Si no está protegido, proceder normalmente
+            
+            # Check limits inside the loop to prevent album bypass
+            user = get_user(user_id) # Refresh user data
+            msg_content_type = detect_content_type(msg)
+            
+            if msg_content_type == 'video':
+                if user['premium']:
+                    if user['daily_video'] >= PREMIUM_VIDEO_DAILY_LIMIT:
+                        await update.message.reply_text(f"⚠️ Límite de videos premium alcanzado ({user['daily_video']}/{PREMIUM_VIDEO_DAILY_LIMIT}). Deteniendo descarga del álbum.")
+                        break
+                else:
+                    if user['downloads'] >= FREE_DOWNLOAD_LIMIT:
+                        await update.message.reply_text(f"⚠️ Límite de videos alcanzado ({user['downloads']}/{FREE_DOWNLOAD_LIMIT}).\n\n💎 /premium para descargas ilimitadas.")
+                        break
+            elif msg_content_type == 'photo':
+                if not user['premium']:
+                    if user['daily_photo'] >= FREE_PHOTO_LIMIT:
+                        await update.message.reply_text(f"⚠️ Límite de fotos alcanzado ({user['daily_photo']}/{FREE_PHOTO_LIMIT}).\n\n💎 /premium para fotos ilimitadas.")
+                        break
+            elif msg_content_type == 'music':
+                if user['premium']:
+                    if user['daily_music'] >= PREMIUM_MUSIC_DAILY_LIMIT:
+                        await update.message.reply_text(f"⚠️ Límite de música diario alcanzado. Deteniendo descarga.")
+                        break
+            elif msg_content_type == 'apk':
+                if user['premium']:
+                    if user['daily_apk'] >= PREMIUM_APK_DAILY_LIMIT:
+                        await update.message.reply_text(f"⚠️ Límite de APK diario alcanzado. Deteniendo descarga.")
+                        break
+
             if len(messages_to_process) > 1:
-                status = await update.message.reply_text(f"📤 Enviando {idx}/{len(messages_to_process)}...")
+                status = await update.message.reply_text(f"📥 Descargando {idx}/{len(messages_to_process)}...")
             else:
-                status = await update.message.reply_text("📤 Enviando...")
+                status = await update.message.reply_text("📥 Descargando...")
+            
             try:
-                await context.bot.forward_message(
-                    chat_id=user_id,
-                    from_chat_id=msg.chat_id,
-                    message_id=msg.id
-                )
-                await status.delete()
-                msg_content_type = detect_content_type(msg)
-                if msg_content_type == 'photo':
-                    if not user['premium']:
-                        increment_daily_counter(user_id, 'photo')
-                elif msg_content_type == 'video':
-                    if user['premium']:
-                        increment_daily_counter(user_id, 'video')
-                    else:
-                        increment_total_downloads(user_id)
-                elif msg_content_type == 'music':
-                    if user['premium']:
-                        increment_daily_counter(user_id, 'music')
-                elif msg_content_type == 'apk':
-                    if user['premium']:
-                        increment_daily_counter(user_id, 'apk')
-            except Exception:
-                await status.edit_text(f"📥 Descargando {idx}/{len(messages_to_process)}..." if len(messages_to_process) > 1 else "📥 Descargando...")
+                # Always use download_and_send_media to avoid 'Forwarded from' tag and ensure it looks like it comes from the bot
                 await download_and_send_media(msg, user_id, context.bot)
                 await status.delete()
-                msg_content_type = detect_content_type(msg)
+                
+                # Increment counters
                 if msg_content_type == 'photo':
                     if not user['premium']:
                         increment_daily_counter(user_id, 'photo')
@@ -3616,6 +3640,8 @@ async def handle_message_old(update: Update, context: ContextTypes.DEFAULT_TYPE)
                 elif msg_content_type == 'apk':
                     if user['premium']:
                         increment_daily_counter(user_id, 'apk')
+            except Exception as e:
+                await status.edit_text(f"❌ Error al descargar archivo {idx}: {str(e)}")
         
         # Show final success message after all messages processed
         user = get_user(user_id)  # Refresh user data
@@ -3631,11 +3657,12 @@ async def handle_message_old(update: Update, context: ContextTypes.DEFAULT_TYPE)
                 await update.message.reply_text(success_msg, parse_mode='Markdown')
             else:
                 user = get_user(user_id)
+                remaining_photos = FREE_PHOTO_LIMIT - user['daily_photo']
                 success_msg = (
                     f"✅ *Descarga Completada*\n\n"
                     f"{album_text}"
-                    f"📸 Fotos hoy: {user['daily_photo']}/{FREE_PHOTO_DAILY_LIMIT}\n"
-                    f"♻️ Se resetea en 24h\n\n"
+                    f"📸 Fotos usadas: {user['daily_photo']}/{FREE_PHOTO_LIMIT}\n"
+                    f"🎁 Te quedan: *{remaining_photos}* fotos\n\n"
                     f"💎 /premium para fotos ilimitadas"
                 )
                 if joined_automatically:
@@ -3767,12 +3794,11 @@ async def post_init(application: Application):
     from telegram import BotCommand
     commands = [
         BotCommand("start", "🏠 Inicio"),
-        BotCommand("panel", "⚙️ Panel de Control"),
-        BotCommand("configurar", "🔐 Conectar Cuenta"),
-        BotCommand("premium", "💎 Premium"),
-        BotCommand("logout", "👋 Desconectar")
+        BotCommand("premium", "💎 Premium")
     ]
     await application.bot.set_my_commands(commands)
+    # Limpiar comandos anteriores si existen
+    # await application.bot.delete_my_commands()
 
 
 async def post_shutdown(application: Application):
@@ -3847,3 +3873,72 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+async def async_main():
+    """Start the bot asynchronously (for use in non-main threads)"""
+    from telegram.request import HTTPXRequest
+
+    request = HTTPXRequest(
+        connection_pool_size=8,
+        connect_timeout=30.0,
+        read_timeout=30.0,
+        write_timeout=30.0,
+        pool_timeout=30.0
+    )
+
+    application = (
+        Application.builder()
+        .token(TELEGRAM_TOKEN)
+        .request(request)
+        .post_init(post_init)
+        .post_shutdown(post_shutdown)
+        .build()
+    )
+
+    # Login conversation handler
+    login_handler = ConversationHandler(
+        entry_points=[
+            CommandHandler("configurar", start_login),
+            CallbackQueryHandler(start_login, pattern="^connect_account$")
+        ],
+        states={
+            PHONE: [MessageHandler(filters.TEXT & ~filters.COMMAND, receive_phone)],
+            CODE: [MessageHandler(filters.TEXT & ~filters.COMMAND, receive_code)],
+            PASSWORD: [MessageHandler(filters.TEXT & ~filters.COMMAND, receive_password)],
+        },
+        fallbacks=[CommandHandler("cancel", cancel_login)],
+        allow_reentry=True
+    )
+    application.add_handler(login_handler)
+    application.add_handler(CommandHandler("logout", logout_command))
+
+    application.add_handler(CommandHandler("start", start_command))
+    application.add_handler(CommandHandler("panel", panel_command))
+    application.add_handler(CommandHandler("premium", premium_command))
+    application.add_handler(CommandHandler("testpay", testpay_command))
+    application.add_handler(CommandHandler("adminstats", adminstats_command))
+    application.add_handler(CommandHandler("stats", stats_command))
+    application.add_handler(CallbackQueryHandler(button_callback))
+    application.add_handler(PreCheckoutQueryHandler(precheckout_callback))
+    application.add_handler(MessageHandler(filters.SUCCESSFUL_PAYMENT, successful_payment_callback))
+    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+
+    logger.info("Bot started. Waiting for messages...")
+    
+    # Initialize the application
+    await application.initialize()
+    await application.start()
+    
+    # Start polling without signal handlers (they don't work in non-main threads)
+    await application.updater.start_polling(allowed_updates=Update.ALL_TYPES)
+    
+    # Keep running
+    try:
+        while True:
+            await asyncio.sleep(1)
+    except asyncio.CancelledError:
+        pass
+    finally:
+        await application.stop()
+        await application.shutdown()

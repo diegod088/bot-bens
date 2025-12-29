@@ -1,8 +1,42 @@
-__pycache__
-.git
-.env
-.venv
+# Python cache
+__pycache__/
 *.pyc
 *.pyo
 *.pyd
+
+# Git
+.git/
+.gitignore
+
+# Environment
+.env
+.venv/
+venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+*.log
+
+# Database (will be created fresh in container)
+*.db
+users.db
+
+# Session files
+*.session
+*.session-journal
+
+# OS files
 .DS_Store
+Thumbs.db
+
+# Documentation (optional, reduce image size)
+*.md
+!README.md
+
+# Development files
+*.txt
+!requirements.txt

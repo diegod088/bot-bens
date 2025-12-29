@@ -180,6 +180,25 @@ MESSAGES = {
         "admin_avg_downloads": "📥 *Promedio Descargas/Usuario:* `{avg:.1f}`\n",
         "admin_revenue": "💰 *Ingresos (Stars):* `{stars:,}` ⭐\n\n",
         "admin_top_users": "🏆 *Top Usuarios:*\n",
+        
+        # Login/Account Setup
+        "login_already_active": "✅ *Ya tienes una sesión activa*\n\nSi quieres cambiar de cuenta, usa /logout primero.",
+        "login_setup_title": "🔐 *Configuración de Cuenta*\n\nPara descargar contenido sin restricciones y evitar baneos, necesitas iniciar sesión con tu propia cuenta de Telegram.\n\n📱 *Paso 1:* Envíame tu número de teléfono en formato internacional.\nEjemplo: `+51999999999`",
+        "login_invalid_phone": "❌ *Formato incorrecto*\n\nEl número debe incluir el código de país y empezar con +.\nEjemplo: `+51999999999`\n\nInténtalo de nuevo:",
+        "login_connecting": "🔄 Conectando con Telegram...",
+        "login_code_sent": "📩 *Código enviado*\n\nRevisa tus mensajes de Telegram (no SMS).\n\n⚠️ *IMPORTANTE:*\nTelegram bloquea el código si lo envías tal cual.\nPor favor, envíalo separando los números con un espacio o guión.\n\nEjemplo: Si el código es `12345`, envía `1 2 3 4 5` o `12-345`.",
+        "login_error_connect": "❌ *Error al conectar*\n\n`{error}`\n\nIntenta de nuevo con /configurar",
+        "login_session_expired": "❌ Sesión expirada. Usa /configurar de nuevo.",
+        "login_verifying_code": "🔄 Verificando código...",
+        "login_2fa_required": "🔐 *Verificación en 2 Pasos*\n\nTu cuenta tiene contraseña de doble factor (2FA).\nPor favor, envíame tu contraseña para continuar.",
+        "login_success": "✅ *¡Configuración Exitosa!*\n\nTu cuenta ha sido vinculada correctamente.\nAhora el bot usará tu propia cuenta para las descargas, lo que reduce el riesgo de baneo y mejora la velocidad.\n\n🚀 ¡Ya puedes descargar contenido!",
+        "login_wrong_code": "❌ *Código Incorrecto*\n\nEl código no es válido. Intenta de nuevo.\n\n💡 Recuerda: envía el código separado con espacios o guiones.\nEjemplo: `1 2 3 4 5` o `12-345`",
+        "login_wrong_password": "❌ *Contraseña Incorrecta*\n\nLa contraseña 2FA no es correcta.\nIntenta de nuevo:",
+        "login_cancelled": "❌ Proceso cancelado.\nUsa /configurar cuando quieras intentarlo de nuevo.",
+        "logout_success": "✅ *Sesión Cerrada*\n\nTu cuenta ha sido desvinculada.\nUsa /configurar para vincular una cuenta nuevamente.",
+        "logout_no_session": "ℹ️ No hay ninguna sesión activa.",
+        "btn_cancel_login": "❌ Cancelar",
+        "btn_back_menu": "◀️ Volver al menú",
     },
     "en": {
         # Start command
@@ -350,6 +369,25 @@ MESSAGES = {
         "admin_avg_downloads": "📥 *Average Downloads/User:* `{avg:.1f}`\n",
         "admin_revenue": "💰 *Revenue (Stars):* `{stars:,}` ⭐\n\n",
         "admin_top_users": "🏆 *Top Users:*\n",
+        
+        # Login/Account Setup
+        "login_already_active": "✅ *You already have an active session*\n\nIf you want to change accounts, use /logout first.",
+        "login_setup_title": "🔐 *Account Setup*\n\nTo download content without restrictions and avoid bans, you need to log in with your own Telegram account.\n\n📱 *Step 1:* Send me your phone number in international format.\nExample: `+1234567890`",
+        "login_invalid_phone": "❌ *Invalid format*\n\nThe number must include the country code and start with +.\nExample: `+1234567890`\n\nTry again:",
+        "login_connecting": "🔄 Connecting to Telegram...",
+        "login_code_sent": "📩 *Code sent*\n\nCheck your Telegram messages (not SMS).\n\n⚠️ *IMPORTANT:*\nTelegram blocks the code if you send it as is.\nPlease send it with spaces or dashes between numbers.\n\nExample: If the code is `12345`, send `1 2 3 4 5` or `12-345`.",
+        "login_error_connect": "❌ *Connection error*\n\n`{error}`\n\nTry again with /configurar",
+        "login_session_expired": "❌ Session expired. Use /configurar again.",
+        "login_verifying_code": "🔄 Verifying code...",
+        "login_2fa_required": "🔐 *Two-Step Verification*\n\nYour account has two-factor authentication (2FA).\nPlease send me your password to continue.",
+        "login_success": "✅ *Setup Successful!*\n\nYour account has been linked successfully.\nNow the bot will use your own account for downloads, reducing ban risk and improving speed.\n\n🚀 You can now download content!",
+        "login_wrong_code": "❌ *Wrong Code*\n\nThe code is invalid. Try again.\n\n💡 Remember: send the code with spaces or dashes.\nExample: `1 2 3 4 5` or `12-345`",
+        "login_wrong_password": "❌ *Wrong Password*\n\nThe 2FA password is incorrect.\nTry again:",
+        "login_cancelled": "❌ Process cancelled.\nUse /configurar when you want to try again.",
+        "logout_success": "✅ *Session Closed*\n\nYour account has been unlinked.\nUse /configurar to link an account again.",
+        "logout_no_session": "ℹ️ There is no active session.",
+        "btn_cancel_login": "❌ Cancel",
+        "btn_back_menu": "◀️ Back to menu",
     },
     "pt": {
         # Start command
@@ -526,6 +564,25 @@ MESSAGES = {
         "admin_avg_downloads": "📥 *Média Downloads/Usuário:* `{avg:.1f}`\n",
         "admin_revenue": "💰 *Receita (Stars):* `{stars:,}` ⭐\n\n",
         "admin_top_users": "🏆 *Top Usuários:*\n",
+        
+        # Login/Account Setup
+        "login_already_active": "✅ *Você já tem uma sessão ativa*\n\nSe quiser mudar de conta, use /logout primeiro.",
+        "login_setup_title": "🔐 *Configuração de Conta*\n\nPara baixar conteúdo sem restrições e evitar banimentos, você precisa fazer login com sua própria conta do Telegram.\n\n📱 *Passo 1:* Envie-me seu número de telefone em formato internacional.\nExemplo: `+5511999999999`",
+        "login_invalid_phone": "❌ *Formato inválido*\n\nO número deve incluir o código do país e começar com +.\nExemplo: `+5511999999999`\n\nTente novamente:",
+        "login_connecting": "🔄 Conectando ao Telegram...",
+        "login_code_sent": "📩 *Código enviado*\n\nVerifique suas mensagens do Telegram (não SMS).\n\n⚠️ *IMPORTANTE:*\nO Telegram bloqueia o código se você enviá-lo como está.\nPor favor, envie-o com espaços ou hífens entre os números.\n\nExemplo: Se o código for `12345`, envie `1 2 3 4 5` ou `12-345`.",
+        "login_error_connect": "❌ *Erro de conexão*\n\n`{error}`\n\nTente novamente com /configurar",
+        "login_session_expired": "❌ Sessão expirada. Use /configurar novamente.",
+        "login_verifying_code": "🔄 Verificando código...",
+        "login_2fa_required": "🔐 *Verificação em Duas Etapas*\n\nSua conta tem autenticação de dois fatores (2FA).\nPor favor, envie-me sua senha para continuar.",
+        "login_success": "✅ *Configuração Concluída!*\n\nSua conta foi vinculada com sucesso.\nAgora o bot usará sua própria conta para downloads, reduzindo o risco de banimento e melhorando a velocidade.\n\n🚀 Você já pode baixar conteúdo!",
+        "login_wrong_code": "❌ *Código Errado*\n\nO código é inválido. Tente novamente.\n\n💡 Lembre-se: envie o código com espaços ou hífens.\nExemplo: `1 2 3 4 5` ou `12-345`",
+        "login_wrong_password": "❌ *Senha Incorreta*\n\nA senha 2FA está incorreta.\nTente novamente:",
+        "login_cancelled": "❌ Processo cancelado.\nUse /configurar quando quiser tentar novamente.",
+        "logout_success": "✅ *Sessão Encerrada*\n\nSua conta foi desvinculada.\nUse /configurar para vincular uma conta novamente.",
+        "logout_no_session": "ℹ️ Não há sessão ativa.",
+        "btn_cancel_login": "❌ Cancelar",
+        "btn_back_menu": "◀️ Voltar ao menu",
     },
     "it": {
         # Start command
@@ -702,6 +759,25 @@ MESSAGES = {
         "admin_avg_downloads": "📥 *Media Download/Utente:* `{avg:.1f}`\n",
         "admin_revenue": "💰 *Entrate (Stars):* `{stars:,}` ⭐\n\n",
         "admin_top_users": "🏆 *Top Utenti:*\n",
+        
+        # Login/Account Setup
+        "login_already_active": "✅ *Hai già una sessione attiva*\n\nSe vuoi cambiare account, usa prima /logout.",
+        "login_setup_title": "🔐 *Configurazione Account*\n\nPer scaricare contenuti senza restrizioni ed evitare ban, devi accedere con il tuo account Telegram.\n\n📱 *Passo 1:* Inviami il tuo numero di telefono in formato internazionale.\nEsempio: `+39123456789`",
+        "login_invalid_phone": "❌ *Formato non valido*\n\nIl numero deve includere il prefisso del paese e iniziare con +.\nEsempio: `+39123456789`\n\nRiprova:",
+        "login_connecting": "🔄 Connessione a Telegram...",
+        "login_code_sent": "📩 *Codice inviato*\n\nControlla i tuoi messaggi Telegram (non SMS).\n\n⚠️ *IMPORTANTE:*\nTelegram blocca il codice se lo invii così com'è.\nPer favore, invialo con spazi o trattini tra i numeri.\n\nEsempio: Se il codice è `12345`, invia `1 2 3 4 5` o `12-345`.",
+        "login_error_connect": "❌ *Errore di connessione*\n\n`{error}`\n\nRiprova con /configurar",
+        "login_session_expired": "❌ Sessione scaduta. Usa di nuovo /configurar.",
+        "login_verifying_code": "🔄 Verifica codice...",
+        "login_2fa_required": "🔐 *Verifica in Due Passaggi*\n\nIl tuo account ha l'autenticazione a due fattori (2FA).\nPer favore, inviami la tua password per continuare.",
+        "login_success": "✅ *Configurazione Completata!*\n\nIl tuo account è stato collegato con successo.\nOra il bot userà il tuo account per i download, riducendo il rischio di ban e migliorando la velocità.\n\n🚀 Ora puoi scaricare contenuti!",
+        "login_wrong_code": "❌ *Codice Errato*\n\nIl codice non è valido. Riprova.\n\n💡 Ricorda: invia il codice con spazi o trattini.\nEsempio: `1 2 3 4 5` o `12-345`",
+        "login_wrong_password": "❌ *Password Errata*\n\nLa password 2FA non è corretta.\nRiprova:",
+        "login_cancelled": "❌ Processo annullato.\nUsa /configurar quando vuoi riprovare.",
+        "logout_success": "✅ *Sessione Chiusa*\n\nIl tuo account è stato scollegato.\nUsa /configurar per collegare di nuovo un account.",
+        "logout_no_session": "ℹ️ Non c'è nessuna sessione attiva.",
+        "btn_cancel_login": "❌ Annulla",
+        "btn_back_menu": "◀️ Torna al menu",
     }
 }
 
@@ -712,13 +788,16 @@ def get_msg(key, lang="es", **kwargs):
     
     Args:
         key: Message key
-        lang: Language code ('es' or 'en')
+        lang: Language code ('es', 'en', 'pt', 'it')
         **kwargs: Format parameters for the message
     
     Returns:
         Formatted message string
     """
     try:
+        # Fallback to Spanish if language not found
+        if lang not in MESSAGES:
+            lang = 'es'
         msg = MESSAGES[lang].get(key, MESSAGES["es"].get(key, f"[Missing: {key}]"))
         if kwargs:
             return msg.format(**kwargs)
@@ -732,5 +811,9 @@ def get_msg(key, lang="es", **kwargs):
 def get_user_language(user):
     """Get user's preferred language, defaulting to Spanish"""
     if user and isinstance(user, dict):
-        return user.get('language', 'es')
+        lang = user.get('language', 'es')
+        # Validate language code
+        if lang not in ['es', 'en', 'pt', 'it']:
+            return 'es'
+        return lang
     return 'es'

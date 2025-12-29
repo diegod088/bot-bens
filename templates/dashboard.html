@@ -1,0 +1,274 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Admin Console{% endblock %}
+
+{% block extra_css %}
+<style>
+    .grid-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .stat-card {
+        background: var(--bg-surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        padding: 1.5rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        transition: all 0.2s;
+    }
+
+    .stat-card:hover {
+        border-color: var(--primary);
+        box-shadow: var(--shadow-md);
+    }
+
+    .stat-label {
+        color: var(--text-secondary);
+        font-size: 0.875rem;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .stat-value {
+        font-size: 1.875rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        letter-spacing: -0.025em;
+    }
+
+    .stat-trend {
+        font-size: 0.75rem;
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+    
+    .trend-up { color: var(--success); }
+    .trend-neutral { color: var(--text-tertiary); }
+
+    .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+    }
+
+    .section-title {
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: var(--text-primary);
+    }
+
+    .activity-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 1rem;
+    }
+
+    .activity-card {
+        background: var(--bg-body);
+        border-radius: var(--radius-md);
+        padding: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .activity-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: white;
+        border: 1px solid var(--border);
+        color: var(--primary);
+    }
+
+    .system-info-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    
+    .system-info-table td {
+        padding: 1rem 0;
+        border-bottom: 1px solid var(--border);
+        color: var(--text-secondary);
+        font-size: 0.875rem;
+    }
+    
+    .system-info-table tr:last-child td {
+        border-bottom: none;
+    }
+    
+    .system-info-table strong {
+        color: var(--text-primary);
+        font-weight: 500;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="section-header">
+    <h1 class="section-title">Vista General</h1>
+    <div style="display: flex; align-items: center; gap: 1rem;">
+        <button onclick="window.location.reload()" class="btn btn-outline text-xs" style="padding: 0.25rem 0.75rem; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--bg-surface); cursor: pointer;">
+            🔄 Actualizar
+        </button>
+        <span class="text-sm text-secondary" id="last-updated">Actualizado: Justo ahora</span>
+    </div>
+</div>
+
+<!-- Main Stats -->
+<div class="grid-stats">
+    <div class="stat-card">
+        <div class="stat-label">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+            Usuarios Totales
+        </div>
+        <div class="stat-value" id="total-users">{{ stats.total_users }}</div>
+        <div class="stat-trend trend-neutral">Base de usuarios</div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-label">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+            Premium
+        </div>
+        <div class="stat-value" id="premium-users">{{ stats.premium_users }}</div>
+        <div class="stat-trend trend-up">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>
+            Activos
+        </div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-label">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+            Descargas
+        </div>
+        <div class="stat-value" id="total-downloads">{{ stats.total_downloads }}</div>
+        <div class="stat-trend trend-neutral">Total histórico</div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-label">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+            Ingresos Est.
+        </div>
+        <div class="stat-value" id="estimated-revenue">{{ stats.estimated_revenue }}</div>
+        <div class="stat-trend trend-up">Mensual</div>
+    </div>
+</div>
+
+<div class="grid-stats" style="grid-template-columns: 2fr 1fr;">
+    <!-- Daily Activity -->
+    <div class="card">
+        <div class="section-header" style="margin-bottom: 1rem;">
+            <h2 class="section-title">Actividad Diaria</h2>
+            <span class="text-sm font-medium text-secondary" id="daily-total">Total: {{ stats.daily_stats.total }}</span>
+        </div>
+        
+        <div class="activity-grid">
+            <div class="activity-card">
+                <div class="activity-icon">📸</div>
+                <div>
+                    <div class="text-xs text-secondary">Fotos</div>
+                    <div class="font-medium" id="daily-photos">{{ stats.daily_stats.photos }}</div>
+                </div>
+            </div>
+            
+            <div class="activity-card">
+                <div class="activity-icon">🎬</div>
+                <div>
+                    <div class="text-xs text-secondary">Videos</div>
+                    <div class="font-medium" id="daily-videos">{{ stats.daily_stats.videos }}</div>
+                </div>
+            </div>
+            
+            <div class="activity-card">
+                <div class="activity-icon">🎵</div>
+                <div>
+                    <div class="text-xs text-secondary">Música</div>
+                    <div class="font-medium" id="daily-music">{{ stats.daily_stats.music }}</div>
+                </div>
+            </div>
+            
+            <div class="activity-card">
+                <div class="activity-icon">📱</div>
+                <div>
+                    <div class="text-xs text-secondary">APKs</div>
+                    <div class="font-medium" id="daily-apk">{{ stats.daily_stats.apk }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- System Info -->
+    <div class="card">
+        <h2 class="section-title" style="margin-bottom: 1rem;">Sistema</h2>
+        <table class="system-info-table">
+            <tr>
+                <td><strong>Hora del Servidor</strong></td>
+                <td id="system-time" class="text-right">{{ now }}</td>
+            </tr>
+            <tr>
+                <td><strong>Base de Datos</strong></td>
+                <td class="text-right">SQLite</td>
+            </tr>
+            <tr>
+                <td><strong>Estado</strong></td>
+                <td class="text-right"><span style="color: var(--success);">● Online</span></td>
+            </tr>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function updateStats() {
+        fetch('/api/stats')
+            .then(response => response.json())
+            .then(data => {
+                // Update main stats with animation
+                const updateElement = (id, value) => {
+                    const el = document.getElementById(id);
+                    if (el && el.textContent !== String(value)) {
+                        el.style.opacity = '0.5';
+                        el.textContent = value;
+                        setTimeout(() => el.style.opacity = '1', 200);
+                    }
+                };
+
+                updateElement('total-users', data.total_users);
+                updateElement('premium-users', data.premium_users);
+                updateElement('total-downloads', data.total_downloads);
+                updateElement('estimated-revenue', data.estimated_revenue);
+
+                // Update daily stats
+                updateElement('daily-photos', data.daily_stats.photos);
+                updateElement('daily-videos', data.daily_stats.videos);
+                updateElement('daily-music', data.daily_stats.music);
+                updateElement('daily-apk', data.daily_stats.apk);
+                updateElement('daily-total', 'Total: ' + data.daily_stats.total);
+
+                // Update timestamp
+                const now = new Date();
+                document.getElementById('last-updated').textContent = 'Actualizado: ' + now.toLocaleTimeString();
+            })
+            .catch(err => console.error('Error updating stats:', err));
+    }
+
+    // Update every 30 seconds
+    setInterval(updateStats, 30000);
+</script>
+{% endblock %}
